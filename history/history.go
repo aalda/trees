@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"math"
 	"sync"
-	"trees/common"
+
+	"github.com/aalda/trees/common"
 )
 
 type HistoryTree struct {

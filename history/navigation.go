@@ -2,7 +2,8 @@ package history
 
 import (
 	"math"
-	"trees/common"
+
+	"github.com/aalda/trees/common"
 )
 
 type CachedResolver interface {

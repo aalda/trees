@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"trees/common"
-	"trees/history"
-	"trees/util"
+
+	"github.com/aalda/trees/common"
+	"github.com/aalda/trees/history"
+	"github.com/aalda/trees/util"
 )
 
 func main() {

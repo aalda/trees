@@ -2,7 +2,8 @@ package common
 
 import (
 	"fmt"
-	"trees/util"
+
+	"github.com/aalda/trees/util"
 )
 
 type Position struct {

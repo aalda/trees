@@ -2,7 +2,8 @@ package history
 
 import (
 	"fmt"
-	"trees/common"
+
+	"github.com/aalda/trees/common"
 )
 
 type CachingVisitor struct {

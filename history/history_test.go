@@ -2,10 +2,10 @@ package history
 
 import (
 	"testing"
-	"trees/common"
-	"trees/util"
 
-	"github.com/bbva/qed/metrics"
+	"github.com/aalda/trees/common"
+	"github.com/aalda/trees/util"
+
 	"github.com/bbva/qed/testutils/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -296,5 +296,4 @@ func BenchmarkAdd(b *testing.B) {
 		key := rand.Bytes(64)
 		tree.Add(key, i)
 	}
-	b.Logf("stats = %+v\n", metrics.History)
 }

@@ -2,7 +2,8 @@ package history
 
 import (
 	"fmt"
-	"trees/common"
+
+	"github.com/aalda/trees/common"
 )
 
 // TODO unify with incremental -> we need to unify cachedresolvers before
