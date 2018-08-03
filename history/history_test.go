@@ -4,6 +4,9 @@ import (
 	"testing"
 
 	"github.com/aalda/trees/common"
+	"github.com/aalda/trees/storage"
+	"github.com/aalda/trees/storage/bplus"
+	"github.com/aalda/trees/storage/cache"
 	"github.com/aalda/trees/util"
 
 	"github.com/bbva/qed/testutils/rand"
@@ -29,7 +32,9 @@ func TestAdd(t *testing.T) {
 		{common.Digest{0x9}, common.Digest{0x1}},
 	}
 
-	tree := NewHistoryTree(new(common.XorHasher), common.NewInMemoryStore())
+	store := bplus.NewBPlusTreeStorage()
+	cache := cache.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	for i, c := range testCases {
 		index := uint64(i)
@@ -87,8 +92,9 @@ func TestProveMembership(t *testing.T) {
 		},
 	}
 
-	frozen := common.NewInMemoryStore()
-	tree := NewHistoryTree(new(common.XorHasher), frozen)
+	store := bplus.NewBPlusTreeStorage()
+	cache := cache.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	for i, c := range testCases {
 		index := uint64(i)
@@ -99,8 +105,9 @@ func TestProveMembership(t *testing.T) {
 }
 
 func TestProveMembershipNonConsecutive(t *testing.T) {
-	frozen := common.NewInMemoryStore()
-	tree := NewHistoryTree(new(common.XorHasher), frozen)
+	store := bplus.NewBPlusTreeStorage()
+	cache := cache.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	// add nine events
 	for i := uint64(0); i < 9; i++ {
@@ -173,8 +180,9 @@ func TestVerify(t *testing.T) {
 		},
 	}
 
-	frozen := common.NewInMemoryStore()
-	tree := NewHistoryTree(new(common.XorHasher), frozen)
+	store := bplus.NewBPlusTreeStorage()
+	cache := cache.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	for i, c := range testCases {
 		index := uint64(i)
@@ -233,8 +241,9 @@ func TestProveConsistency(t *testing.T) {
 		},
 	}
 
-	frozen := common.NewInMemoryStore()
-	tree := NewHistoryTree(new(common.XorHasher), frozen)
+	store := bplus.NewBPlusTreeStorage()
+	cache := cache.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	for i, c := range testCases {
 		index := uint64(i)
@@ -247,8 +256,9 @@ func TestProveConsistency(t *testing.T) {
 }
 
 func TestProveConsistencyNonConsecutive(t *testing.T) {
-	frozen := common.NewInMemoryStore()
-	tree := NewHistoryTree(new(common.XorHasher), frozen)
+	store := bplus.NewBPlusTreeStorage()
+	cache := cache.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	// add nine events
 	for i := uint64(0); i < 9; i++ {
@@ -266,8 +276,9 @@ func TestProveConsistencyNonConsecutive(t *testing.T) {
 }
 
 func TestProveConsistencySameVersions(t *testing.T) {
-	frozen := common.NewInMemoryStore()
-	tree := NewHistoryTree(new(common.XorHasher), frozen)
+	store := bplus.NewBPlusTreeStorage()
+	cache := cache.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	// add nine events
 	for i := uint64(0); i < 9; i++ {
@@ -289,8 +300,9 @@ func max(x, y int) int {
 }
 
 func BenchmarkAdd(b *testing.B) {
-	frozen := common.NewInMemoryStore()
-	tree := NewHistoryTree(common.NewSha256Hasher(), frozen)
+	store := bplus.NewBPlusTreeStorage()
+	cache := cache.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	tree := NewHistoryTree(common.NewSha256Hasher(), store, cache)
 	b.N = 100000
 	for i := uint64(0); i < uint64(b.N); i++ {
 		key := rand.Bytes(64)

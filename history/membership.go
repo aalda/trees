@@ -52,6 +52,6 @@ func (v *AuditPathVisitor) VisitLeaf(pos *common.Position, eventDigest []byte) i
 func (v *AuditPathVisitor) VisitCached(pos *common.Position) interface{} {
 	digest := v.decorated.VisitCached(pos)
 	fmt.Printf("Adding cached to path in position: %v\n", pos)
-	v.auditPath[pos.StringId()] = digest.(common.Digest)
+	v.auditPath[pos.StringIdAsUint64()] = digest.(common.Digest)
 	return digest
 }

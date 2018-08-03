@@ -32,5 +32,5 @@ func (v *RecomputeHashVisitor) VisitLeaf(pos *Position, value []byte) interface{
 
 func (v *RecomputeHashVisitor) VisitCached(pos *Position) interface{} {
 	fmt.Printf("Getting hash from path in position: %v\n", pos)
-	return v.auditPath[pos.StringId()]
+	return v.auditPath[pos.StringIdAsUint64()]
 }

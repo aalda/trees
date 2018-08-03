@@ -9,7 +9,7 @@ type Digest []byte
 
 type Hasher interface {
 	Do(...[]byte) []byte
-	Len() uint64
+	Len() uint16
 }
 
 type XorHasher struct{}
@@ -25,7 +25,7 @@ func (x XorHasher) Do(data ...[]byte) []byte {
 	}
 	return []byte{result}
 }
-func (s XorHasher) Len() uint64 { return uint64(8) }
+func (s XorHasher) Len() uint16 { return uint16(8) }
 
 type Sha256Hasher struct {
 	underlying hash.Hash
@@ -43,4 +43,4 @@ func (s *Sha256Hasher) Do(data ...[]byte) []byte {
 	return s.underlying.Sum(nil)[:]
 }
 
-func (s Sha256Hasher) Len() uint64 { return uint64(256) }
+func (s Sha256Hasher) Len() uint16 { return uint16(256) }
