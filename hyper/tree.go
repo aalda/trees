@@ -12,12 +12,12 @@ import (
 type HyperTree struct {
 	lock       sync.RWMutex
 	store      storage.Store
-	cache      storage.Cache
+	cache      common.Cache
 	hasher     common.Hasher
 	cacheLevel uint16
 }
 
-func NewHyperTree(hasher common.Hasher, store storage.Store, cache storage.Cache, cacheLevel uint16) *HyperTree {
+func NewHyperTree(hasher common.Hasher, store storage.Store, cache common.Cache, cacheLevel uint16) *HyperTree {
 	var lock sync.RWMutex
 	return &HyperTree{lock, store, cache, hasher, cacheLevel}
 }

@@ -2,8 +2,6 @@ package common
 
 import (
 	"fmt"
-
-	"github.com/aalda/trees/storage"
 )
 
 type Commitment struct {
@@ -17,10 +15,10 @@ func NewCommitment(version uint64, digest Digest) *Commitment {
 
 type ComputeHashVisitor struct {
 	hasher Hasher
-	cache  storage.Cache
+	cache  Cache
 }
 
-func NewComputeHashVisitor(hasher Hasher, cache storage.Cache) *ComputeHashVisitor {
+func NewComputeHashVisitor(hasher Hasher, cache Cache) *ComputeHashVisitor {
 	return &ComputeHashVisitor{hasher, cache}
 }
 
@@ -46,8 +44,8 @@ func (v *ComputeHashVisitor) VisitLeaf(pos Position, value []byte) interface{} {
 
 func (v *ComputeHashVisitor) VisitCached(pos Position) interface{} {
 	fmt.Printf("Getting cached hash in position: %v\n", pos)
-	pair, _ := v.cache.Get(pos.Bytes())
-	return Digest(pair.Value)
+	digest, _ := v.cache.Get(pos)
+	return digest
 }
 
 func (v *ComputeHashVisitor) leafHash(id, leaf Digest) Digest {

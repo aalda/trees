@@ -13,11 +13,11 @@ import (
 type HistoryTree struct {
 	lock   sync.RWMutex
 	frozen storage.Store
-	cache  storage.Cache
+	cache  common.Cache
 	hasher common.Hasher
 }
 
-func NewHistoryTree(hasher common.Hasher, frozen storage.Store, cache storage.Cache) *HistoryTree {
+func NewHistoryTree(hasher common.Hasher, frozen storage.Store, cache common.Cache) *HistoryTree {
 	var lock sync.RWMutex
 	return &HistoryTree{lock, frozen, cache, hasher}
 }

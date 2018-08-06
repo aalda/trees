@@ -6,7 +6,6 @@ import (
 	"github.com/aalda/trees/common"
 	"github.com/aalda/trees/storage"
 	"github.com/aalda/trees/storage/bplus"
-	"github.com/aalda/trees/storage/cache"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,8 +28,9 @@ func TestAdd(t *testing.T) {
 	}
 
 	store := bplus.NewBPlusTreeStorage()
-	cache := cache.NewPassThroughCache(storage.HyperCachePrefix, store)
-	tree := NewHyperTree(new(common.XorHasher), store, cache, 6)
+	cache := common.NewPassThroughCache(storage.HyperCachePrefix, store)
+	fallback := common.NewFallbackCache([]byte("blah"), 8, new(common.XorHasher), cache)
+	tree := NewHyperTree(new(common.XorHasher), store, fallback, 6)
 
 	for i, c := range testCases {
 		index := uint64(i)

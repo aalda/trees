@@ -70,7 +70,3 @@ type Store interface {
 	Get(prefix byte, key []byte) (*KVPair, error)
 	Close() error
 }
-
-type Cache interface {
-	Get(key []byte) (*KVPair, error)
-}
