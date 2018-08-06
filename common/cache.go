@@ -1,6 +1,10 @@
 package common
 
-import "github.com/aalda/trees/storage"
+import (
+	"fmt"
+
+	"github.com/aalda/trees/storage"
+)
 
 type Cache interface {
 	Get(pos Position) (Digest, bool)
@@ -26,10 +30,33 @@ func (c PassThroughCache) Get(pos Position) (Digest, bool) {
 	return nil, false
 }
 
+const keySize = 34
+
 type TwoLevelCache struct {
-	prefix byte
-	store  *storage.Store
-	//cached map[[36]byte]Digest
+	decorated Cache
+	cached    map[[keySize]byte]Digest
+}
+
+func NewTwoLevelCache(decorated Cache) *TwoLevelCache {
+	return &TwoLevelCache{
+		decorated: decorated,
+		cached:    make(map[[keySize]byte]Digest),
+	}
+}
+
+func (c TwoLevelCache) Get(pos Position) (Digest, bool) {
+	var key [keySize]byte
+	copy(key[:], pos.Bytes())
+
+	digest, ok := c.cached[key]
+	if !ok {
+		digest, ok = c.decorated.Get(pos)
+		if ok {
+			fmt.Println("hint")
+			c.cached[key] = digest
+		}
+	}
+	return digest, ok
 }
 
 type FallbackCache struct {
@@ -54,5 +81,5 @@ func (c FallbackCache) Get(pos Position) (Digest, bool) {
 	if ok {
 		return digest, ok
 	}
-	return c.defaultHashes[pos.Height()], false
+	return c.defaultHashes[pos.Height()], true
 }

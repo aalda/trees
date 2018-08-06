@@ -29,8 +29,9 @@ func TestAdd(t *testing.T) {
 
 	store := bplus.NewBPlusTreeStorage()
 	cache := common.NewPassThroughCache(storage.HyperCachePrefix, store)
-	fallback := common.NewFallbackCache([]byte("blah"), 8, new(common.XorHasher), cache)
-	tree := NewHyperTree(new(common.XorHasher), store, fallback, 6)
+	twoLevel := common.NewTwoLevelCache(cache)
+	fallback := common.NewFallbackCache([]byte("blah"), 8, new(common.XorHasher), twoLevel)
+	tree := NewHyperTree(new(common.XorHasher), store, fallback, 4)
 
 	for i, c := range testCases {
 		index := uint64(i)
