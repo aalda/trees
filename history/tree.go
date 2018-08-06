@@ -8,7 +8,6 @@ import (
 
 	"github.com/aalda/trees/common"
 	"github.com/aalda/trees/storage"
-	"github.com/aalda/trees/util"
 )
 
 type HistoryTree struct {
@@ -23,8 +22,8 @@ func NewHistoryTree(hasher common.Hasher, frozen storage.Store, cache storage.Ca
 	return &HistoryTree{lock, frozen, cache, hasher}
 }
 
-func (t *HistoryTree) newRootPosition(version uint64) *common.Position {
-	return common.NewPosition(util.Uint64AsBytes(0), t.getDepth(version))
+func (t *HistoryTree) newRootPosition(version uint64) *HistoryPosition {
+	return NewPosition(0, t.getDepth(version))
 }
 
 func (t *HistoryTree) getDepth(version uint64) uint16 {
@@ -41,7 +40,7 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 	caching := NewCachingVisitor(version, computeHash)
 
 	// navigator
-	targetPos := common.NewPosition(util.Uint64AsBytes(version), 0)
+	targetPos := NewPosition(version, 0)
 	resolver := NewMembershipCachedResolver(targetPos)
 	navigator := NewHistoryNavigator(resolver, targetPos, targetPos, t.getDepth(version))
 
@@ -68,8 +67,8 @@ func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 	calcAuditPath := NewAuditPathVisitor(computeHash)
 
 	// navigator
-	startPos := common.NewPosition(util.Uint64AsBytes(index), 0)
-	endPos := common.NewPosition(util.Uint64AsBytes(version), 0)
+	startPos := NewPosition(index, 0)
+	endPos := NewPosition(version, 0)
 	var resolver CachedResolver
 	switch index == version {
 	case true:
@@ -98,7 +97,7 @@ func (t *HistoryTree) VerifyMembership(proof *MembershipProof, version uint64, e
 	recomputeHash := common.NewRecomputeHashVisitor(computeHash, proof.AuditPath)
 
 	// navigator
-	targetPos := common.NewPosition(util.Uint64AsBytes(version), 0)
+	targetPos := NewPosition(version, 0)
 	resolver := NewMembershipCachedResolver(targetPos)
 	navigator := NewHistoryNavigator(resolver, targetPos, targetPos, t.getDepth(version))
 
@@ -121,8 +120,8 @@ func (t *HistoryTree) ProveConsistency(start, end uint64) *IncrementalProof {
 	calcAuditPath := NewIncAuditPathVisitor(computeHash)
 
 	// navigator
-	startPos := common.NewPosition(util.Uint64AsBytes(start), 0)
-	endPos := common.NewPosition(util.Uint64AsBytes(end), 0)
+	startPos := NewPosition(start, 0)
+	endPos := NewPosition(end, 0)
 	resolver := NewIncrementalCachedResolver(startPos, endPos)
 	navigator := NewHistoryNavigator(resolver, startPos, endPos, t.getDepth(end))
 

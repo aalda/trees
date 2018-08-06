@@ -25,7 +25,15 @@ type KVPair struct {
 	Key, Value []byte
 }
 
+func NewKVPair(key, value []byte) KVPair {
+	return KVPair{Key: key, Value: value}
+}
+
 type KVRange []KVPair
+
+func NewKVRange() KVRange {
+	return make(KVRange, 0)
+}
 
 func (r KVRange) InsertSorted(p KVPair) KVRange {
 	index := sort.Search(len(r), func(i int) bool {
@@ -60,6 +68,7 @@ type Store interface {
 	Mutate(mutations []Mutation) error
 	GetRange(prefix byte, start, end []byte) (KVRange, error)
 	Get(prefix byte, key []byte) (*KVPair, error)
+	Close() error
 }
 
 type Cache interface {

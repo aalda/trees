@@ -5,15 +5,15 @@ import (
 )
 
 type Traversable interface {
-	Traverse(pos *Position) Visitable
+	Traverse(pos Position) Visitable
 }
 
 type Visitor interface {
-	VisitRoot(pos *Position, leftResult, rightResult interface{}) interface{}
-	VisitNode(pos *Position, leftResult, rightResult interface{}) interface{}
-	VisitPartialNode(pos *Position, leftResult interface{}) interface{}
-	VisitLeaf(pos *Position, value []byte) interface{}
-	VisitCached(pos *Position) interface{}
+	VisitRoot(pos Position, leftResult, rightResult interface{}) interface{}
+	VisitNode(pos Position, leftResult, rightResult interface{}) interface{}
+	VisitPartialNode(pos Position, leftResult interface{}) interface{}
+	VisitLeaf(pos Position, value []byte) interface{}
+	VisitCached(pos Position) interface{}
 }
 
 type Visitable interface {
@@ -22,30 +22,30 @@ type Visitable interface {
 }
 
 type Root struct {
-	pos         *Position
+	pos         Position
 	left, right Visitable
 }
 
 type Node struct {
-	pos         *Position
+	pos         Position
 	left, right Visitable
 }
 
 type PartialNode struct {
-	pos  *Position
+	pos  Position
 	left Visitable
 }
 
 type Leaf struct {
-	pos         *Position
+	pos         Position
 	eventDigest Digest
 }
 
 type Cached struct {
-	pos *Position
+	pos Position
 }
 
-func NewRoot(pos *Position, left, right Visitable) *Root {
+func NewRoot(pos Position, left, right Visitable) *Root {
 	return &Root{pos, left, right}
 }
 
@@ -56,10 +56,10 @@ func (r Root) Accept(visitor Visitor) interface{} {
 }
 
 func (r Root) String() string {
-	return fmt.Sprintf("Root(%d, %d)[ %v | %v ]", r.pos.Index, r.pos.Height, r.left, r.right)
+	return fmt.Sprintf("Root(%v)[ %v | %v ]", r.pos, r.left, r.right)
 }
 
-func NewNode(pos *Position, left, right Visitable) *Node {
+func NewNode(pos Position, left, right Visitable) *Node {
 	return &Node{pos, left, right}
 }
 
@@ -70,10 +70,10 @@ func (n Node) Accept(visitor Visitor) interface{} {
 }
 
 func (n Node) String() string {
-	return fmt.Sprintf("Node(%d, %d)[ %v | %v ]", n.pos.Index, n.pos.Height, n.left, n.right)
+	return fmt.Sprintf("Node(%v)[ %v | %v ]", n.pos, n.left, n.right)
 }
 
-func NewPartialNode(pos *Position, left Visitable) *PartialNode {
+func NewPartialNode(pos Position, left Visitable) *PartialNode {
 	return &PartialNode{pos, left}
 }
 
@@ -83,10 +83,10 @@ func (p PartialNode) Accept(visitor Visitor) interface{} {
 }
 
 func (p PartialNode) String() string {
-	return fmt.Sprintf("PartialNode(%d, %d)[ %v ]", p.pos.Index, p.pos.Height, p.left)
+	return fmt.Sprintf("PartialNode(%v)[ %v ]", p.pos, p.left)
 }
 
-func NewLeaf(pos *Position, value []byte) *Leaf {
+func NewLeaf(pos Position, value []byte) *Leaf {
 	return &Leaf{pos, value}
 }
 
@@ -95,10 +95,10 @@ func (l Leaf) Accept(visitor Visitor) interface{} {
 }
 
 func (l Leaf) String() string {
-	return fmt.Sprintf("Leaf(%d, %d)", l.pos.Index, l.pos.Height)
+	return fmt.Sprintf("Leaf(%v)", l.pos)
 }
 
-func NewCached(pos *Position) *Cached {
+func NewCached(pos Position) *Cached {
 	return &Cached{pos}
 }
 
@@ -107,10 +107,10 @@ func (c Cached) Accept(visitor Visitor) interface{} {
 }
 
 func (c Cached) String() string {
-	return fmt.Sprintf("Cached(%d, %d)", c.pos.Index, c.pos.Height)
+	return fmt.Sprintf("Cached(%v)", c.pos)
 }
 
-func Traverse(pos *Position, navigator Navigator, eventDigest Digest) Visitable {
+func Traverse(pos Position, navigator Navigator, eventDigest Digest) Visitable {
 	if navigator.ShouldBeCached(pos) {
 		return NewCached(pos)
 	}

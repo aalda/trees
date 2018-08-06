@@ -15,5 +15,9 @@ func Uint16AsBytes(i uint16) []byte {
 }
 
 func BytesAsUint64(b []byte) uint64 {
-	return binary.LittleEndian.Uint64(b)
+	var out uint64
+	for i, x := range b {
+		out |= uint64(x) << uint64(i*8)
+	}
+	return out
 }

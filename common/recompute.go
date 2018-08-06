@@ -14,23 +14,23 @@ func NewRecomputeHashVisitor(decorated *ComputeHashVisitor, auditPath AuditPath)
 	return &RecomputeHashVisitor{decorated, auditPath}
 }
 
-func (v *RecomputeHashVisitor) VisitRoot(pos *Position, leftResult, rightResult interface{}) interface{} {
+func (v *RecomputeHashVisitor) VisitRoot(pos Position, leftResult, rightResult interface{}) interface{} {
 	return v.decorated.VisitRoot(pos, leftResult, rightResult)
 }
 
-func (v *RecomputeHashVisitor) VisitNode(pos *Position, leftResult, rightResult interface{}) interface{} {
+func (v *RecomputeHashVisitor) VisitNode(pos Position, leftResult, rightResult interface{}) interface{} {
 	return v.decorated.VisitNode(pos, leftResult, rightResult)
 }
 
-func (v *RecomputeHashVisitor) VisitPartialNode(pos *Position, leftResult interface{}) interface{} {
+func (v *RecomputeHashVisitor) VisitPartialNode(pos Position, leftResult interface{}) interface{} {
 	return v.decorated.VisitPartialNode(pos, leftResult)
 }
 
-func (v *RecomputeHashVisitor) VisitLeaf(pos *Position, value []byte) interface{} {
+func (v *RecomputeHashVisitor) VisitLeaf(pos Position, value []byte) interface{} {
 	return v.decorated.VisitLeaf(pos, value)
 }
 
-func (v *RecomputeHashVisitor) VisitCached(pos *Position) interface{} {
+func (v *RecomputeHashVisitor) VisitCached(pos Position) interface{} {
 	fmt.Printf("Getting hash from path in position: %v\n", pos)
-	return v.auditPath[pos.StringIdAsUint64()]
+	return v.auditPath[pos.StringId()]
 }

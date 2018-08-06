@@ -21,4 +21,5 @@ type TwoLevelCache struct {
 	//cached map[[36]byte]Digest
 }
 
-type FallbackCache struct{}
+type FallbackCache struct {
+}
