@@ -41,6 +41,10 @@ func (n HyperNavigator) ShouldBeCached(pos common.Position) bool {
 	return !n.IsRoot(pos) && pos.Height() > n.cacheLevel && !n.isOnPath(pos)
 }
 
+func (n HyperNavigator) ShouldCache(pos common.Position) bool {
+	return pos.Height() > n.cacheLevel
+}
+
 func (n HyperNavigator) isOnPath(pos common.Position) bool {
 	bit := n.numBits - pos.Height()
 	return bitGet(n.target.Index(), bit) == bitGet(pos.Index(), bit)

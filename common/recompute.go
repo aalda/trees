@@ -34,3 +34,8 @@ func (v *RecomputeHashVisitor) VisitCached(pos Position) interface{} {
 	fmt.Printf("Getting hash from path in position: %v\n", pos)
 	return v.auditPath[pos.StringId()]
 }
+
+func (v *RecomputeHashVisitor) VisitCacheable(pos Position, result interface{}) interface{} {
+	fmt.Println("Getting cacheable value in position: %v\n", pos)
+	return result
+}

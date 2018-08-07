@@ -48,6 +48,11 @@ func (v *ComputeHashVisitor) VisitCached(pos Position) interface{} {
 	return digest
 }
 
+func (v *ComputeHashVisitor) VisitCacheable(pos Position, result interface{}) interface{} {
+	fmt.Println("Getting cacheable value in position: %v\n", pos)
+	return result
+}
+
 func (v *ComputeHashVisitor) leafHash(id, leaf Digest) Digest {
 	return v.hasher.Do(leaf)
 }

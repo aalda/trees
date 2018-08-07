@@ -8,14 +8,6 @@ import (
 
 // TODO unify with incremental -> we need to unify cachedresolvers before
 
-type MembershipProof struct {
-	AuditPath common.AuditPath
-}
-
-func NewMembershipProof(path common.AuditPath) *MembershipProof {
-	return &MembershipProof{path}
-}
-
 type AuditPathVisitor struct {
 	decorated *common.ComputeHashVisitor
 	auditPath common.AuditPath
@@ -54,4 +46,9 @@ func (v *AuditPathVisitor) VisitCached(pos common.Position) interface{} {
 	fmt.Printf("Adding cached to path in position: %v\n", pos)
 	v.auditPath[pos.StringId()] = digest.(common.Digest)
 	return digest
+}
+
+func (v *AuditPathVisitor) VisitCacheable(pos common.Position, result interface{}) interface{} {
+	// by-pass
+	return v.decorated.VisitCacheable(pos, result)
 }

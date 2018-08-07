@@ -6,4 +6,5 @@ type Navigator interface {
 	GoToLeft(Position) Position
 	GoToRight(Position) Position
 	ShouldBeCached(Position) bool
+	ShouldCache(Position) bool
 }

@@ -85,3 +85,7 @@ func (n *HistoryNavigator) IsRoot(pos common.Position) bool {
 func (n *HistoryNavigator) ShouldBeCached(pos common.Position) bool {
 	return n.resolver.ShouldBeCached(pos)
 }
+
+func (n *HistoryNavigator) ShouldCache(pos common.Position) bool {
+	return n.end.IndexAsUint64() >= pos.IndexAsUint64()+pow(2, pos.Height())-1
+}

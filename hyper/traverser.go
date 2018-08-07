@@ -26,7 +26,11 @@ func (t HyperTraverser) Traverse(pos common.Position, navigator common.Navigator
 		return common.NewCached(pos)
 	}
 	if navigator.IsLeaf(pos) && len(t.leaves) == 1 {
-		return common.NewLeaf(pos, t.leaves[0].Value)
+		leaf := common.NewLeaf(pos, t.leaves[0].Value)
+		if navigator.ShouldCache(pos) {
+			return common.NewCacheable(pos, leaf)
+		}
+		return leaf
 	}
 	if !navigator.IsRoot(pos) && len(t.leaves) == 0 {
 		return common.NewCached(pos) // it should resolve to a default hash because it actually won't be in cache
@@ -54,7 +58,11 @@ func (t HyperTraverser) Traverse2(pos common.Position, navigator common.Navigato
 		return common.NewCached(pos)
 	}
 	if navigator.IsLeaf(pos) && len(t.leaves) == 1 {
-		return common.NewLeaf(pos, t.leaves[0].Value)
+		leaf := common.NewLeaf(pos, t.leaves[0].Value)
+		if navigator.ShouldCache(pos) {
+			return common.NewCacheable(pos, leaf)
+		}
+		return leaf
 	}
 	if !navigator.IsRoot(pos) && len(t.leaves) == 0 {
 		return common.NewCached(pos) // it should resolve to a default hash because it actually won't be in cache
@@ -73,7 +81,11 @@ func (t HyperTraverser) Traverse2(pos common.Position, navigator common.Navigato
 	if navigator.IsRoot(pos) {
 		return common.NewRoot(pos, left, right)
 	}
-	return common.NewNode(pos, left, right)
+	node := common.NewNode(pos, left, right)
+	if navigator.ShouldCache(pos) {
+		return common.NewCacheable(pos, node)
+	}
+	return node
 }
 
 func (t HyperTraverser) descendToFirst(pos common.Position) common.Position {

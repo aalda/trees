@@ -37,7 +37,7 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
-	caching := NewCachingVisitor(version, computeHash)
+	caching := common.NewCachingVisitor(storage.HistoryCachePrefix, computeHash)
 
 	// navigator
 	targetPos := NewPosition(version, 0)
@@ -55,6 +55,14 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 	t.frozen.Mutate(caching.Result())
 
 	return common.NewCommitment(version, rh)
+}
+
+type MembershipProof struct {
+	AuditPath common.AuditPath
+}
+
+func NewMembershipProof(path common.AuditPath) *MembershipProof {
+	return &MembershipProof{path}
 }
 
 func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {

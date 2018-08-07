@@ -34,7 +34,7 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
-	caching := NewCachingVisitor(t.cacheLevel, computeHash)
+	caching := common.NewCachingVisitor(storage.HyperCachePrefix, computeHash)
 
 	// navigator
 	targetPos := NewPosition(eventDigest, 0)

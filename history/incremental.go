@@ -52,3 +52,8 @@ func (v *IncAuditPathVisitor) VisitCached(pos common.Position) interface{} {
 	v.auditPath[pos.StringId()] = digest.(common.Digest)
 	return digest
 }
+
+func (v *IncAuditPathVisitor) VisitCacheable(pos common.Position, result interface{}) interface{} {
+	// by-pass
+	return v.decorated.VisitCacheable(pos, result)
+}

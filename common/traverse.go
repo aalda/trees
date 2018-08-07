@@ -14,6 +14,7 @@ type Visitor interface {
 	VisitPartialNode(pos Position, leftResult interface{}) interface{}
 	VisitLeaf(pos Position, value []byte) interface{}
 	VisitCached(pos Position) interface{}
+	VisitCacheable(pos Position, result interface{}) interface{}
 }
 
 type Visitable interface {
@@ -43,6 +44,11 @@ type Leaf struct {
 
 type Cached struct {
 	pos Position
+}
+
+type Cacheable struct {
+	pos        Position
+	underlying Visitable
 }
 
 func NewRoot(pos Position, left, right Visitable) *Root {
@@ -110,12 +116,29 @@ func (c Cached) String() string {
 	return fmt.Sprintf("Cached(%v)", c.pos)
 }
 
+func NewCacheable(pos Position, underlying Visitable) *Cacheable {
+	return &Cacheable{pos, underlying}
+}
+
+func (c Cacheable) Accept(visitor Visitor) interface{} {
+	result := c.underlying.Accept(visitor)
+	return visitor.VisitCacheable(c.pos, result)
+}
+
+func (c Cacheable) String() string {
+	return fmt.Sprintf("Cacheable[ %v ]", c.underlying)
+}
+
 func Traverse(pos Position, navigator Navigator, eventDigest Digest) Visitable {
 	if navigator.ShouldBeCached(pos) {
 		return NewCached(pos)
 	}
 	if navigator.IsLeaf(pos) {
-		return NewLeaf(pos, eventDigest)
+		leaf := NewLeaf(pos, eventDigest)
+		if navigator.ShouldCache(pos) {
+			return NewCacheable(pos, leaf)
+		}
+		return leaf
 	}
 	// we do a post-order traversal
 	left := Traverse(navigator.GoToLeft(pos), navigator, eventDigest)
@@ -124,8 +147,14 @@ func Traverse(pos Position, navigator Navigator, eventDigest Digest) Visitable {
 		return NewPartialNode(pos, left)
 	}
 	right := Traverse(rightPos, navigator, eventDigest)
+	var result Visitable
 	if navigator.IsRoot(pos) {
-		return NewRoot(pos, left, right)
+		result = NewRoot(pos, left, right)
+	} else {
+		result = NewNode(pos, left, right)
 	}
-	return NewNode(pos, left, right)
+	if navigator.ShouldCache(pos) {
+		return NewCacheable(pos, result)
+	}
+	return result
 }
