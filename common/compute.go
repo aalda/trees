@@ -1,9 +1,5 @@
 package common
 
-import (
-	"fmt"
-)
-
 type Commitment struct {
 	Version uint64
 	Digest  Digest
@@ -23,33 +19,33 @@ func NewComputeHashVisitor(hasher Hasher, cache Cache) *ComputeHashVisitor {
 }
 
 func (v *ComputeHashVisitor) VisitRoot(pos Position, leftResult, rightResult interface{}) interface{} {
-	fmt.Printf("Computing root hash in position: %v\n", pos)
+	//fmt.Printf("Computing root hash in position: %v\n", pos)
 	return v.interiorHash(pos.Bytes(), leftResult.(Digest), rightResult.(Digest))
 }
 
 func (v *ComputeHashVisitor) VisitNode(pos Position, leftResult, rightResult interface{}) interface{} {
-	fmt.Printf("Computing node hash in position: %v\n", pos)
+	//fmt.Printf("Computing node hash in position: %v\n", pos)
 	return v.interiorHash(pos.Bytes(), leftResult.(Digest), rightResult.(Digest))
 }
 
 func (v *ComputeHashVisitor) VisitPartialNode(pos Position, leftResult interface{}) interface{} {
-	fmt.Printf("Computing partial node hash in position: %v\n", pos)
+	//fmt.Printf("Computing partial node hash in position: %v\n", pos)
 	return v.leafHash(pos.Bytes(), leftResult.(Digest))
 }
 
 func (v *ComputeHashVisitor) VisitLeaf(pos Position, value []byte) interface{} {
-	fmt.Printf("Computing leaf hash in position: %v\n", pos)
+	//fmt.Printf("Computing leaf hash in position: %v\n", pos)
 	return v.leafHash(pos.Bytes(), value)
 }
 
 func (v *ComputeHashVisitor) VisitCached(pos Position) interface{} {
-	fmt.Printf("Getting cached hash in position: %v\n", pos)
+	//fmt.Printf("Getting cached hash in position: %v\n", pos)
 	digest, _ := v.cache.Get(pos)
 	return digest
 }
 
 func (v *ComputeHashVisitor) VisitCacheable(pos Position, result interface{}) interface{} {
-	fmt.Println("Getting cacheable value in position: %v\n", pos)
+	//fmt.Println("Getting cacheable value in position: %v\n", pos)
 	return result
 }
 

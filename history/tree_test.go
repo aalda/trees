@@ -299,10 +299,13 @@ func max(x, y int) int {
 }
 
 func BenchmarkAdd(b *testing.B) {
-	store := bplus.NewBPlusTreeStorage()
+	store, closeF := openBadgerStore("/var/tmp/hyper_tree_test.db")
+	defer closeF()
+
 	cache := common.NewPassThroughCache(storage.HistoryCachePrefix, store)
 	tree := NewHistoryTree(common.NewSha256Hasher(), store, cache)
 	b.N = 100000
+	b.ResetTimer()
 	for i := uint64(0); i < uint64(b.N); i++ {
 		key := rand.Bytes(64)
 		tree.Add(key, i)

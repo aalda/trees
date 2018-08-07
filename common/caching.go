@@ -1,8 +1,6 @@
 package common
 
 import (
-	"fmt"
-
 	"github.com/aalda/trees/storage"
 )
 
@@ -50,7 +48,7 @@ func (v *CachingVisitor) VisitCached(pos Position) interface{} {
 }
 
 func (v *CachingVisitor) VisitCacheable(pos Position, result interface{}) interface{} {
-	fmt.Printf("Caching digest with position: %v\n", pos)
+	//fmt.Printf("Caching digest with position: %v\n", pos)
 	mutation := storage.NewMutation(v.storePrefix, pos.Bytes(), result.(Digest))
 	v.mutations = append(v.mutations, *mutation)
 	return result

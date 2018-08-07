@@ -33,7 +33,7 @@ func (t *HistoryTree) getDepth(version uint64) uint16 {
 func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Commitment {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	fmt.Printf("Adding event %b with version %d\n", eventDigest, version)
+	//fmt.Printf("Adding event %b with version %d\n", eventDigest, version)
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
@@ -46,7 +46,7 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 
 	// traverse from root and generate a visitable pruned tree
 	root := common.Traverse(t.newRootPosition(version), navigator, eventDigest)
-	fmt.Printf("Pruned tree: %v\n", root)
+	//fmt.Printf("Pruned tree: %v\n", root)
 
 	// visit the pruned tree
 	rh := root.Accept(caching).(common.Digest)
