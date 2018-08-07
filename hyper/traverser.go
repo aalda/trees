@@ -54,9 +54,6 @@ func (t HyperTraverser) Traverse(pos common.Position, navigator common.Navigator
 }
 
 func (t HyperTraverser) Traverse2(pos common.Position, navigator common.Navigator) common.Visitable {
-	if navigator.ShouldBeCached(pos) {
-		return common.NewCached(pos)
-	}
 	if navigator.IsLeaf(pos) && len(t.leaves) == 1 {
 		leaf := common.NewLeaf(pos, t.leaves[0].Value)
 		if navigator.ShouldCache(pos) {
@@ -64,7 +61,7 @@ func (t HyperTraverser) Traverse2(pos common.Position, navigator common.Navigato
 		}
 		return leaf
 	}
-	if !navigator.IsRoot(pos) && len(t.leaves) == 0 {
+	if len(t.leaves) == 0 && !navigator.IsRoot(pos) {
 		return common.NewCached(pos) // it should resolve to a default hash because it actually won't be in cache
 	}
 	if len(t.leaves) > 1 && navigator.IsLeaf(pos) {
@@ -94,17 +91,10 @@ func (t HyperTraverser) descendToFirst(pos common.Position) common.Position {
 
 func (t HyperTraverser) descendToLast(pos common.Position) common.Position {
 	layer := t.numBits - pos.Height()
-	base := make([]byte, max(uint16(1), t.numBits/8))
+	base := make([]byte, t.numBits/8)
 	copy(base, pos.Index())
 	for bit := layer; bit < t.numBits; bit++ {
 		bitSet(base, bit)
 	}
 	return NewPosition(base, 0)
-}
-
-func max(x, y uint16) uint16 {
-	if x > y {
-		return x
-	}
-	return y
 }

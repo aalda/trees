@@ -28,7 +28,7 @@ func (p HyperPosition) Height() uint16 {
 }
 
 func (p HyperPosition) Bytes() []byte {
-	b := make([]byte, 10) // Size of the index plus 2 bytes for the height
+	b := make([]byte, 34) // Size of the index plus 2 bytes for the height
 	copy(b, p.index)
 	copy(b[len(p.index):], util.Uint16AsBytes(p.height))
 	return b

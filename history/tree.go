@@ -45,7 +45,8 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 	navigator := NewHistoryNavigator(resolver, targetPos, targetPos, t.getDepth(version))
 
 	// traverse from root and generate a visitable pruned tree
-	root := common.Traverse(t.newRootPosition(version), navigator, eventDigest)
+	traverser := NewHistoryTraverser(eventDigest)
+	root := traverser.Traverse(t.newRootPosition(version), navigator)
 	//fmt.Printf("Pruned tree: %v\n", root)
 
 	// visit the pruned tree
@@ -87,7 +88,8 @@ func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 	navigator := NewHistoryNavigator(resolver, startPos, endPos, t.getDepth(version))
 
 	// traverse from root and generate a visitable pruned tree
-	root := common.Traverse(t.newRootPosition(version), navigator, nil)
+	traverser := NewHistoryTraverser(nil)
+	root := traverser.Traverse(t.newRootPosition(version), navigator)
 	fmt.Printf("Pruned tree: %v\n", root)
 
 	// visit the pruned tree
@@ -110,7 +112,8 @@ func (t *HistoryTree) VerifyMembership(proof *MembershipProof, version uint64, e
 	navigator := NewHistoryNavigator(resolver, targetPos, targetPos, t.getDepth(version))
 
 	// traverse from root and generate a visitable pruned tree
-	root := common.Traverse(t.newRootPosition(version), navigator, eventDigest)
+	traverser := NewHistoryTraverser(eventDigest)
+	root := traverser.Traverse(t.newRootPosition(version), navigator)
 	fmt.Printf("Pruned tree: %v\n", root)
 
 	// visit the pruned tree
@@ -134,7 +137,8 @@ func (t *HistoryTree) ProveConsistency(start, end uint64) *IncrementalProof {
 	navigator := NewHistoryNavigator(resolver, startPos, endPos, t.getDepth(end))
 
 	// traverse from root and generate a visitable pruned tree
-	root := common.Traverse(t.newRootPosition(end), navigator, nil)
+	traverser := NewHistoryTraverser(nil)
+	root := traverser.Traverse(t.newRootPosition(end), navigator)
 	fmt.Printf("Pruned tree: %v\n", root)
 
 	// visit the pruned tree

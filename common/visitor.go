@@ -39,10 +39,14 @@ type PartialNode struct {
 
 type Leaf struct {
 	pos         Position
-	eventDigest Digest
+	eventDigest []byte
 }
 
 type Cached struct {
+	pos Position
+}
+
+type Default struct {
 	pos Position
 }
 
@@ -127,34 +131,4 @@ func (c Cacheable) Accept(visitor Visitor) interface{} {
 
 func (c Cacheable) String() string {
 	return fmt.Sprintf("Cacheable[ %v ]", c.underlying)
-}
-
-func Traverse(pos Position, navigator Navigator, eventDigest Digest) Visitable {
-	if navigator.ShouldBeCached(pos) {
-		return NewCached(pos)
-	}
-	if navigator.IsLeaf(pos) {
-		leaf := NewLeaf(pos, eventDigest)
-		if navigator.ShouldCache(pos) {
-			return NewCacheable(pos, leaf)
-		}
-		return leaf
-	}
-	// we do a post-order traversal
-	left := Traverse(navigator.GoToLeft(pos), navigator, eventDigest)
-	rightPos := navigator.GoToRight(pos)
-	if rightPos == nil {
-		return NewPartialNode(pos, left)
-	}
-	right := Traverse(rightPos, navigator, eventDigest)
-	var result Visitable
-	if navigator.IsRoot(pos) {
-		result = NewRoot(pos, left, right)
-	} else {
-		result = NewNode(pos, left, right)
-	}
-	if navigator.ShouldCache(pos) {
-		return NewCacheable(pos, result)
-	}
-	return result
 }

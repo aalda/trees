@@ -1,7 +1,6 @@
 package hyper
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/aalda/trees/common"
@@ -30,7 +29,7 @@ func newRootPosition(numBits uint16) common.Position {
 func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commitment {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	fmt.Printf("Adding event %b with version %d\n", eventDigest, version)
+	//fmt.Printf("Adding event %b with version %d\n", eventDigest, version)
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
@@ -56,14 +55,14 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 	// visit the pruned tree
 	rh := root.Accept(caching).(common.Digest)
 
-	fmt.Println(root)
+	//fmt.Println(root)
 
 	// persiste mutations
 	mutations := caching.Result()
 	mutations = append(mutations, *leafMutation)
 	t.store.Mutate(mutations)
 
-	fmt.Println(mutations)
+	//fmt.Println(mutations)
 
 	return common.NewCommitment(version, rh)
 }

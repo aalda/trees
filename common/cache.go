@@ -1,8 +1,6 @@
 package common
 
 import (
-	"fmt"
-
 	"github.com/aalda/trees/storage"
 )
 
@@ -37,10 +35,10 @@ type TwoLevelCache struct {
 	cached    map[[keySize]byte]Digest
 }
 
-func NewTwoLevelCache(decorated Cache) *TwoLevelCache {
+func NewTwoLevelCache(size uint64, decorated Cache) *TwoLevelCache {
 	return &TwoLevelCache{
 		decorated: decorated,
-		cached:    make(map[[keySize]byte]Digest),
+		cached:    make(map[[keySize]byte]Digest, size),
 	}
 }
 
@@ -52,7 +50,6 @@ func (c TwoLevelCache) Get(pos Position) (Digest, bool) {
 	if !ok {
 		digest, ok = c.decorated.Get(pos)
 		if ok {
-			fmt.Println("hint")
 			c.cached[key] = digest
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/aalda/trees/common"
 	"github.com/aalda/trees/storage"
 	"github.com/aalda/trees/storage/bplus"
+	"github.com/bbva/qed/testutils/rand"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,7 +30,7 @@ func TestAdd(t *testing.T) {
 
 	store := bplus.NewBPlusTreeStorage()
 	cache := common.NewPassThroughCache(storage.HyperCachePrefix, store)
-	twoLevel := common.NewTwoLevelCache(cache)
+	twoLevel := common.NewTwoLevelCache(10, cache)
 	fallback := common.NewFallbackCache([]byte("blah"), 8, new(common.XorHasher), twoLevel)
 	tree := NewHyperTree(new(common.XorHasher), store, fallback, 4)
 
@@ -37,5 +38,24 @@ func TestAdd(t *testing.T) {
 		index := uint64(i)
 		commitment := tree.Add(c.eventDigest, index)
 		require.Equalf(t, c.expectedRootHash, commitment.Digest, "Incorrect root hash for index %d", i)
+	}
+}
+
+func BenchmarkAdd(b *testing.B) {
+	store, closeF := openBadgerStore("/var/tmp/hyper_tree_test.db")
+	defer closeF()
+
+	hasher := common.NewSha256Hasher()
+	cache := common.NewPassThroughCache(storage.HyperCachePrefix, store)
+	twoLevel := common.NewTwoLevelCache(1<<25, cache)
+	fallback := common.NewFallbackCache([]byte("blah"), hasher.Len(), common.NewSha256Hasher(), twoLevel)
+	tree := NewHyperTree(common.NewSha256Hasher(), store, fallback, hasher.Len()-25)
+
+	//cache := common.NewPas.NewSimpleCache(1 << 25)
+	b.ResetTimer()
+	b.N = 10000
+	for i := 0; i < b.N; i++ {
+		key := hasher.Do(rand.Bytes(32))
+		tree.Add(key, uint64(i))
 	}
 }
