@@ -47,10 +47,6 @@ type Cached struct {
 	digest Digest
 }
 
-type Default struct {
-	pos Position
-}
-
 type Cacheable struct {
 	pos        Position
 	underlying Visitable

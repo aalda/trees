@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/aalda/trees/common"
+	//. "github.com/aalda/trees/logging"
 	"github.com/aalda/trees/util"
 )
 
@@ -68,7 +69,7 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 	// visit the pruned tree
 	rh := root.Accept(caching).(common.Digest)
 
-	//fmt.Println(root)
+	//Trace.Println(root)
 
 	// persist mutations
 	cachedElements := caching.Result()

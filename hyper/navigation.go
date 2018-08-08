@@ -46,8 +46,8 @@ func (n HyperNavigator) ShouldCache(pos common.Position) bool {
 }
 
 func (n HyperNavigator) isOnPath(pos common.Position) bool {
-	bit := n.numBits - pos.Height()
-	return bitGet(n.target.Index(), bit) == bitGet(pos.Index(), bit)
+	bit := n.numBits - pos.Height() - 1
+	return bitIsSet(n.target.Index(), bit) == bitIsSet(pos.Index(), bit)
 }
 
 func (n HyperNavigator) splitBase(pos common.Position) []byte {
@@ -61,6 +61,5 @@ func (n HyperNavigator) splitBase(pos common.Position) []byte {
 }
 
 func bitIsSet(bits []byte, i uint16) bool { return bits[i/8]&(1<<uint(7-i%8)) != 0 }
-func bitGet(bits []byte, i uint16) byte   { return bits[i/8] & (1 << uint(7-i%8)) }
 func bitSet(bits []byte, i uint16)        { bits[i/8] |= 1 << uint(7-i%8) }
 func bitUnset(bits []byte, i uint16)      { bits[i/8] &= 0 << uint(7-i%8) }

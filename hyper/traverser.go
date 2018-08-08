@@ -63,11 +63,7 @@ func (t HyperTraverser) Traverse(pos common.Position, navigator common.Navigator
 
 func (t HyperTraverser) Traverse2(pos common.Position, navigator common.Navigator, leaves common.KVRange) common.Visitable {
 	if navigator.IsLeaf(pos) && len(leaves) == 1 {
-		leaf := common.NewLeaf(pos, leaves[0].Value)
-		if navigator.ShouldCache(pos) {
-			return common.NewCacheable(pos, leaf)
-		}
-		return leaf
+		return common.NewLeaf(pos, leaves[0].Value)
 	}
 	if !navigator.IsRoot(pos) && len(leaves) == 0 {
 		return common.NewCached(pos, t.defaultHashes[pos.Height()])
