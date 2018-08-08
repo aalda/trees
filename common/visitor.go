@@ -5,7 +5,7 @@ import (
 )
 
 type Traversable interface {
-	Traverse(pos Position) Visitable
+	Traverse(pos Position, navigator Navigator, cache Cache) Visitable
 }
 
 type Visitor interface {
@@ -13,7 +13,7 @@ type Visitor interface {
 	VisitNode(pos Position, leftResult, rightResult interface{}) interface{}
 	VisitPartialNode(pos Position, leftResult interface{}) interface{}
 	VisitLeaf(pos Position, value []byte) interface{}
-	VisitCached(pos Position) interface{}
+	VisitCached(pos Position, cachedDigest Digest) interface{}
 	VisitCacheable(pos Position, result interface{}) interface{}
 }
 
@@ -38,12 +38,13 @@ type PartialNode struct {
 }
 
 type Leaf struct {
-	pos         Position
-	eventDigest []byte
+	pos   Position
+	value []byte
 }
 
 type Cached struct {
-	pos Position
+	pos    Position
+	digest Digest
 }
 
 type Default struct {
@@ -101,23 +102,23 @@ func NewLeaf(pos Position, value []byte) *Leaf {
 }
 
 func (l Leaf) Accept(visitor Visitor) interface{} {
-	return visitor.VisitLeaf(l.pos, l.eventDigest)
+	return visitor.VisitLeaf(l.pos, l.value)
 }
 
 func (l Leaf) String() string {
-	return fmt.Sprintf("Leaf(%v)", l.pos)
+	return fmt.Sprintf("Leaf(%v)[ %x ]", l.pos, l.value)
 }
 
-func NewCached(pos Position) *Cached {
-	return &Cached{pos}
+func NewCached(pos Position, digest Digest) *Cached {
+	return &Cached{pos, digest}
 }
 
 func (c Cached) Accept(visitor Visitor) interface{} {
-	return visitor.VisitCached(c.pos)
+	return visitor.VisitCached(c.pos, c.digest)
 }
 
 func (c Cached) String() string {
-	return fmt.Sprintf("Cached(%v)", c.pos)
+	return fmt.Sprintf("Cached(%v)[ %x ]", c.pos, c.digest)
 }
 
 func NewCacheable(pos Position, underlying Visitable) *Cacheable {

@@ -43,11 +43,11 @@ func (v *IncAuditPathVisitor) VisitPartialNode(pos common.Position, leftResult i
 
 func (v *IncAuditPathVisitor) VisitLeaf(pos common.Position, eventDigest []byte) interface{} {
 	// the leaf should be in cache
-	return v.VisitCached(pos)
+	return v.VisitCached(pos, nil)
 }
 
-func (v *IncAuditPathVisitor) VisitCached(pos common.Position) interface{} {
-	digest := v.decorated.VisitCached(pos)
+func (v *IncAuditPathVisitor) VisitCached(pos common.Position, cachedDigest common.Digest) interface{} {
+	digest := v.decorated.VisitCached(pos, cachedDigest)
 	fmt.Printf("Adding cached to path in position: %v\n", pos)
 	v.auditPath[pos.StringId()] = digest.(common.Digest)
 	return digest

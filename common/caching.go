@@ -1,25 +1,24 @@
 package common
 
-import (
-	"github.com/aalda/trees/storage"
-)
-
-type CachingVisitor struct {
-	storePrefix byte
-	decorated   Visitor
-	mutations   []storage.Mutation
+type CachedElement struct {
+	Pos    Position
+	Digest Digest
 }
 
-func NewCachingVisitor(storePrefix byte, decorated Visitor) *CachingVisitor {
+type CachingVisitor struct {
+	decorated Visitor
+	elements  []CachedElement
+}
+
+func NewCachingVisitor(decorated Visitor) *CachingVisitor {
 	return &CachingVisitor{
-		storePrefix: storePrefix,
-		decorated:   decorated,
-		mutations:   make([]storage.Mutation, 0),
+		decorated: decorated,
+		elements:  make([]CachedElement, 0),
 	}
 }
 
-func (v *CachingVisitor) Result() []storage.Mutation {
-	return v.mutations
+func (v *CachingVisitor) Result() []CachedElement {
+	return v.elements
 }
 
 func (v *CachingVisitor) VisitRoot(pos Position, leftResult, rightResult interface{}) interface{} {
@@ -42,14 +41,14 @@ func (v *CachingVisitor) VisitLeaf(pos Position, eventDigest []byte) interface{}
 	return v.decorated.VisitLeaf(pos, eventDigest).(Digest)
 }
 
-func (v *CachingVisitor) VisitCached(pos Position) interface{} {
+func (v *CachingVisitor) VisitCached(pos Position, cachedDigest Digest) interface{} {
 	// by-pass
-	return v.decorated.VisitCached(pos)
+	return v.decorated.VisitCached(pos, cachedDigest)
 }
 
 func (v *CachingVisitor) VisitCacheable(pos Position, result interface{}) interface{} {
 	//fmt.Printf("Caching digest with position: %v\n", pos)
-	mutation := storage.NewMutation(v.storePrefix, pos.Bytes(), result.(Digest))
-	v.mutations = append(v.mutations, *mutation)
+	element := &CachedElement{pos, result.(Digest)}
+	v.elements = append(v.elements, *element)
 	return result
 }

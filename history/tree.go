@@ -7,17 +7,16 @@ import (
 	"sync"
 
 	"github.com/aalda/trees/common"
-	"github.com/aalda/trees/storage"
 )
 
 type HistoryTree struct {
 	lock   sync.RWMutex
-	frozen storage.Store
+	frozen common.Store
 	cache  common.Cache
 	hasher common.Hasher
 }
 
-func NewHistoryTree(hasher common.Hasher, frozen storage.Store, cache common.Cache) *HistoryTree {
+func NewHistoryTree(hasher common.Hasher, frozen common.Store, cache common.Cache) *HistoryTree {
 	var lock sync.RWMutex
 	return &HistoryTree{lock, frozen, cache, hasher}
 }
@@ -37,7 +36,7 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
-	caching := common.NewCachingVisitor(storage.HistoryCachePrefix, computeHash)
+	caching := common.NewCachingVisitor(computeHash)
 
 	// navigator
 	targetPos := NewPosition(version, 0)
@@ -46,14 +45,20 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 
 	// traverse from root and generate a visitable pruned tree
 	traverser := NewHistoryTraverser(eventDigest)
-	root := traverser.Traverse(t.newRootPosition(version), navigator)
+	root := traverser.Traverse(t.newRootPosition(version), navigator, t.cache)
 	//fmt.Printf("Pruned tree: %v\n", root)
 
 	// visit the pruned tree
 	rh := root.Accept(caching).(common.Digest)
 
-	// persiste mutations
-	t.frozen.Mutate(caching.Result())
+	// persist mutations
+	cachedElements := caching.Result()
+	mutations := make([]common.Mutation, len(cachedElements))
+	for _, e := range cachedElements {
+		mutation := common.NewMutation(common.HistoryCachePrefix, e.Pos.Bytes(), e.Digest)
+		mutations = append(mutations, *mutation)
+	}
+	t.frozen.Mutate(mutations)
 
 	return common.NewCommitment(version, rh)
 }
@@ -73,7 +78,7 @@ func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
-	calcAuditPath := NewAuditPathVisitor(computeHash)
+	calcAuditPath := common.NewAuditPathVisitor(computeHash)
 
 	// navigator
 	startPos := NewPosition(index, 0)
@@ -89,7 +94,7 @@ func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 
 	// traverse from root and generate a visitable pruned tree
 	traverser := NewHistoryTraverser(nil)
-	root := traverser.Traverse(t.newRootPosition(version), navigator)
+	root := traverser.Traverse(t.newRootPosition(version), navigator, t.cache)
 	fmt.Printf("Pruned tree: %v\n", root)
 
 	// visit the pruned tree
@@ -104,7 +109,6 @@ func (t *HistoryTree) VerifyMembership(proof *MembershipProof, version uint64, e
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
-	recomputeHash := common.NewRecomputeHashVisitor(computeHash, proof.AuditPath)
 
 	// navigator
 	targetPos := NewPosition(version, 0)
@@ -113,11 +117,11 @@ func (t *HistoryTree) VerifyMembership(proof *MembershipProof, version uint64, e
 
 	// traverse from root and generate a visitable pruned tree
 	traverser := NewHistoryTraverser(eventDigest)
-	root := traverser.Traverse(t.newRootPosition(version), navigator)
+	root := traverser.Traverse(t.newRootPosition(version), navigator, proof.AuditPath)
 	fmt.Printf("Pruned tree: %v\n", root)
 
 	// visit the pruned tree
-	recomputed := root.Accept(recomputeHash).(common.Digest)
+	recomputed := root.Accept(computeHash).(common.Digest)
 	return bytes.Equal(recomputed, expectedDigest)
 }
 
@@ -138,7 +142,7 @@ func (t *HistoryTree) ProveConsistency(start, end uint64) *IncrementalProof {
 
 	// traverse from root and generate a visitable pruned tree
 	traverser := NewHistoryTraverser(nil)
-	root := traverser.Traverse(t.newRootPosition(end), navigator)
+	root := traverser.Traverse(t.newRootPosition(end), navigator, t.cache)
 	fmt.Printf("Pruned tree: %v\n", root)
 
 	// visit the pruned tree

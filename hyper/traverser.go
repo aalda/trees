@@ -2,69 +2,77 @@ package hyper
 
 import (
 	"github.com/aalda/trees/common"
-	"github.com/aalda/trees/storage"
 )
 
 type HyperTraverser struct {
-	numBits    uint16
-	cacheLevel uint16
-	leaves     storage.KVRange
-	store      storage.Store
+	numBits       uint16
+	cacheLevel    uint16
+	store         common.Store
+	defaultHashes []common.Digest
 }
 
-func NewHyperTraverser(numBits, cacheLevel uint16, leaves storage.KVRange, store storage.Store) *HyperTraverser {
+func NewHyperTraverser(numBits, cacheLevel uint16, store common.Store, defaultHashes []common.Digest) *HyperTraverser {
 	return &HyperTraverser{
-		numBits:    numBits,
-		cacheLevel: cacheLevel,
-		leaves:     leaves,
-		store:      store,
+		numBits:       numBits,
+		cacheLevel:    cacheLevel,
+		store:         store,
+		defaultHashes: defaultHashes,
 	}
 }
 
-func (t HyperTraverser) Traverse(pos common.Position, navigator common.Navigator) common.Visitable {
+func (t HyperTraverser) Traverse(pos common.Position, navigator common.Navigator, cache common.Cache, leaves common.KVRange) common.Visitable {
+
 	if navigator.ShouldBeCached(pos) {
-		return common.NewCached(pos)
-	}
-	if navigator.IsLeaf(pos) && len(t.leaves) == 1 {
-		leaf := common.NewLeaf(pos, t.leaves[0].Value)
-		if navigator.ShouldCache(pos) {
-			return common.NewCacheable(pos, leaf)
+		digest, ok := cache.Get(pos)
+		if !ok {
+			return common.NewCached(pos, t.defaultHashes[pos.Height()])
 		}
-		return leaf
-	}
-	if !navigator.IsRoot(pos) && len(t.leaves) == 0 {
-		return common.NewCached(pos) // it should resolve to a default hash because it actually won't be in cache
-	}
-	if len(t.leaves) > 1 && navigator.IsLeaf(pos) {
-		panic("this should never happen (unsorted LeavesSlice or broken split?)")
+		return common.NewCached(pos, digest)
 	}
 
-	// now we are over the cache level so we need to do a range query to get the leaves
-	first := t.descendToFirst(pos)
-	last := t.descendToLast(pos)
-	kvRange, _ := t.store.GetRange(storage.IndexPrefix, first.Index(), last.Index())
+	// if we are over the cache level, we need to do a range query to get the leaves
+	if pos.Height() < t.cacheLevel {
+		first := t.descendToFirst(pos)
+		last := t.descendToLast(pos)
+		kvRange, _ := t.store.GetRange(common.IndexPrefix, first.Index(), last.Index())
 
-	// replace leaves with new slice and append the previous to the new one
-	for _, l := range t.leaves {
-		kvRange = kvRange.InsertSorted(l)
+		// replace leaves with new slice and append the previous to the new one
+		for _, l := range leaves {
+			kvRange = kvRange.InsertSorted(l)
+		}
+		leaves = kvRange
+
+		return t.Traverse2(pos, navigator, leaves)
 	}
-	t.leaves = kvRange
 
-	return t.Traverse2(pos, navigator)
+	rightPos := navigator.GoToRight(pos)
+	leftSlice, rightSlice := leaves.Split(rightPos.Index())
+	left := t.Traverse(navigator.GoToLeft(pos), navigator, cache, leftSlice)
+	right := t.Traverse(rightPos, navigator, cache, rightSlice)
+
+	if navigator.IsRoot(pos) {
+		return common.NewRoot(pos, left, right)
+	}
+
+	node := common.NewNode(pos, left, right)
+	if navigator.ShouldCache(pos) {
+		return common.NewCacheable(pos, node)
+	}
+	return node
 }
 
-func (t HyperTraverser) Traverse2(pos common.Position, navigator common.Navigator) common.Visitable {
-	if navigator.IsLeaf(pos) && len(t.leaves) == 1 {
-		leaf := common.NewLeaf(pos, t.leaves[0].Value)
+func (t HyperTraverser) Traverse2(pos common.Position, navigator common.Navigator, leaves common.KVRange) common.Visitable {
+	if navigator.IsLeaf(pos) && len(leaves) == 1 {
+		leaf := common.NewLeaf(pos, leaves[0].Value)
 		if navigator.ShouldCache(pos) {
 			return common.NewCacheable(pos, leaf)
 		}
 		return leaf
 	}
-	if len(t.leaves) == 0 && !navigator.IsRoot(pos) {
-		return common.NewCached(pos) // it should resolve to a default hash because it actually won't be in cache
+	if !navigator.IsRoot(pos) && len(leaves) == 0 {
+		return common.NewCached(pos, t.defaultHashes[pos.Height()])
 	}
-	if len(t.leaves) > 1 && navigator.IsLeaf(pos) {
+	if len(leaves) > 1 && navigator.IsLeaf(pos) {
 		panic("this should never happen (unsorted LeavesSlice or broken split?)")
 	}
 
@@ -72,9 +80,9 @@ func (t HyperTraverser) Traverse2(pos common.Position, navigator common.Navigato
 
 	// split leaves
 	rightPos := navigator.GoToRight(pos)
-	leftSlice, rightSlice := t.leaves.Split(rightPos.Index())
-	left := NewHyperTraverser(t.numBits, t.cacheLevel, leftSlice, t.store).Traverse2(navigator.GoToLeft(pos), navigator)
-	right := NewHyperTraverser(t.numBits, t.cacheLevel, rightSlice, t.store).Traverse2(rightPos, navigator)
+	leftSlice, rightSlice := leaves.Split(rightPos.Index())
+	left := t.Traverse2(navigator.GoToLeft(pos), navigator, leftSlice)
+	right := t.Traverse2(rightPos, navigator, rightSlice)
 	if navigator.IsRoot(pos) {
 		return common.NewRoot(pos, left, right)
 	}

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/aalda/trees/common"
-	"github.com/aalda/trees/storage"
 	"github.com/aalda/trees/storage/bplus"
 	"github.com/aalda/trees/util"
 
@@ -32,7 +31,7 @@ func TestAdd(t *testing.T) {
 	}
 
 	store := bplus.NewBPlusTreeStorage()
-	cache := common.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	for i, c := range testCases {
@@ -92,7 +91,7 @@ func TestProveMembership(t *testing.T) {
 	}
 
 	store := bplus.NewBPlusTreeStorage()
-	cache := common.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	for i, c := range testCases {
@@ -105,7 +104,7 @@ func TestProveMembership(t *testing.T) {
 
 func TestProveMembershipNonConsecutive(t *testing.T) {
 	store := bplus.NewBPlusTreeStorage()
-	cache := common.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	// add nine events
@@ -180,7 +179,7 @@ func TestVerify(t *testing.T) {
 	}
 
 	store := bplus.NewBPlusTreeStorage()
-	cache := common.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	for i, c := range testCases {
@@ -241,7 +240,7 @@ func TestProveConsistency(t *testing.T) {
 	}
 
 	store := bplus.NewBPlusTreeStorage()
-	cache := common.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	for i, c := range testCases {
@@ -256,7 +255,7 @@ func TestProveConsistency(t *testing.T) {
 
 func TestProveConsistencyNonConsecutive(t *testing.T) {
 	store := bplus.NewBPlusTreeStorage()
-	cache := common.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	// add nine events
@@ -276,7 +275,7 @@ func TestProveConsistencyNonConsecutive(t *testing.T) {
 
 func TestProveConsistencySameVersions(t *testing.T) {
 	store := bplus.NewBPlusTreeStorage()
-	cache := common.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)
 
 	// add nine events
@@ -302,7 +301,7 @@ func BenchmarkAdd(b *testing.B) {
 	store, closeF := openBadgerStore("/var/tmp/hyper_tree_test.db")
 	defer closeF()
 
-	cache := common.NewPassThroughCache(storage.HistoryCachePrefix, store)
+	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(common.NewSha256Hasher(), store, cache)
 	b.N = 100000
 	b.ResetTimer()

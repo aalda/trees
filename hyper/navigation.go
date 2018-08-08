@@ -38,7 +38,7 @@ func (n HyperNavigator) GoToRight(pos common.Position) common.Position {
 }
 
 func (n HyperNavigator) ShouldBeCached(pos common.Position) bool {
-	return pos.Height() > n.cacheLevel && !n.isOnPath(pos)
+	return !n.IsRoot(pos) && pos.Height() > n.cacheLevel && !n.isOnPath(pos)
 }
 
 func (n HyperNavigator) ShouldCache(pos common.Position) bool {

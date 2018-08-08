@@ -10,9 +10,13 @@ func NewHistoryTraverser(eventDigest common.Digest) *HistoryTraverser {
 	return &HistoryTraverser{eventDigest}
 }
 
-func (t HistoryTraverser) Traverse(pos common.Position, navigator common.Navigator) common.Visitable {
+func (t HistoryTraverser) Traverse(pos common.Position, navigator common.Navigator, cache common.Cache) common.Visitable {
 	if navigator.ShouldBeCached(pos) {
-		return common.NewCached(pos)
+		digest, ok := cache.Get(pos)
+		if !ok {
+			panic("this digest should be in cache")
+		}
+		return common.NewCached(pos, digest)
 	}
 	if navigator.IsLeaf(pos) {
 		leaf := common.NewLeaf(pos, t.eventDigest)
@@ -22,12 +26,12 @@ func (t HistoryTraverser) Traverse(pos common.Position, navigator common.Navigat
 		return leaf
 	}
 	// we do a post-order traversal
-	left := t.Traverse(navigator.GoToLeft(pos), navigator)
+	left := t.Traverse(navigator.GoToLeft(pos), navigator, cache)
 	rightPos := navigator.GoToRight(pos)
 	if rightPos == nil {
 		return common.NewPartialNode(pos, left)
 	}
-	right := t.Traverse(rightPos, navigator)
+	right := t.Traverse(rightPos, navigator, cache)
 	var result common.Visitable
 	if navigator.IsRoot(pos) {
 		result = common.NewRoot(pos, left, right)

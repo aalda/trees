@@ -4,21 +4,34 @@ import (
 	"sync"
 
 	"github.com/aalda/trees/common"
-	"github.com/aalda/trees/storage"
 	"github.com/aalda/trees/util"
 )
 
 type HyperTree struct {
-	lock       sync.RWMutex
-	store      storage.Store
-	cache      common.Cache
-	hasher     common.Hasher
-	cacheLevel uint16
+	lock          sync.RWMutex
+	store         common.Store
+	cache         common.ModifiableCache
+	hasher        common.Hasher
+	cacheLevel    uint16
+	defaultHashes []common.Digest
 }
 
-func NewHyperTree(hasher common.Hasher, store storage.Store, cache common.Cache, cacheLevel uint16) *HyperTree {
+func NewHyperTree(hasher common.Hasher, store common.Store, cache common.ModifiableCache, cacheLevel uint16) *HyperTree {
 	var lock sync.RWMutex
-	return &HyperTree{lock, store, cache, hasher, cacheLevel}
+	tree := &HyperTree{
+		lock:          lock,
+		store:         store,
+		cache:         cache,
+		hasher:        hasher,
+		cacheLevel:    cacheLevel,
+		defaultHashes: make([]common.Digest, hasher.Len()),
+	}
+
+	tree.defaultHashes[0] = tree.hasher.Do([]byte{0x0}, []byte{0x0})
+	for i := uint16(1); i < hasher.Len(); i++ {
+		tree.defaultHashes[i] = tree.hasher.Do(tree.defaultHashes[i-1], tree.defaultHashes[i-1])
+	}
+	return tree
 }
 
 func newRootPosition(numBits uint16) common.Position {
@@ -33,7 +46,7 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
-	caching := common.NewCachingVisitor(storage.HyperCachePrefix, computeHash)
+	caching := common.NewCachingVisitor(computeHash)
 
 	// navigator
 	targetPos := NewPosition(eventDigest, 0)
@@ -41,24 +54,32 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 
 	// create a mutation for the new leaf
 	versionAsBytes := util.Uint64AsBytes(version)
-	leafMutation := storage.NewMutation(storage.IndexPrefix, eventDigest, versionAsBytes)
+	leafMutation := common.NewMutation(common.IndexPrefix, eventDigest, versionAsBytes)
 
 	// create a leaves range with the new leaf to insert
-	leaves := storage.NewKVRange()
-	leaf := storage.NewKVPair(eventDigest, versionAsBytes)
+	leaves := common.NewKVRange()
+	leaf := common.NewKVPair(eventDigest, versionAsBytes)
 	leaves = leaves.InsertSorted(leaf)
 
 	// traverse from root and generate a visitable pruned tree
-	traverser := NewHyperTraverser(t.hasher.Len(), t.cacheLevel, leaves, t.store)
-	root := traverser.Traverse(newRootPosition(t.hasher.Len()), navigator)
+	traverser := NewHyperTraverser(t.hasher.Len(), t.cacheLevel, t.store, t.defaultHashes)
+	root := traverser.Traverse(newRootPosition(t.hasher.Len()), navigator, t.cache, leaves)
 
 	// visit the pruned tree
 	rh := root.Accept(caching).(common.Digest)
 
 	//fmt.Println(root)
 
-	// persiste mutations
-	mutations := caching.Result()
+	// persist mutations
+	cachedElements := caching.Result()
+	mutations := make([]common.Mutation, len(cachedElements))
+	for _, e := range cachedElements {
+		mutation := common.NewMutation(common.HyperCachePrefix, e.Pos.Bytes(), e.Digest)
+		mutations = append(mutations, *mutation)
+
+		// update cache
+		t.cache.Put(e.Pos, e.Digest)
+	}
 	mutations = append(mutations, *leafMutation)
 	t.store.Mutate(mutations)
 

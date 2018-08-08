@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"log"
 
-	"github.com/aalda/trees/storage"
+	"github.com/aalda/trees/common"
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
 )
@@ -27,7 +27,7 @@ func NewBadgerStore(path string) *BadgerStore {
 	return &BadgerStore{db}
 }
 
-func (s BadgerStore) Mutate(mutations []storage.Mutation) error {
+func (s BadgerStore) Mutate(mutations []common.Mutation) error {
 	return s.db.Update(func(txn *badger.Txn) error {
 		for _, m := range mutations {
 			key := append([]byte{m.Prefix}, m.Key...)
@@ -40,8 +40,8 @@ func (s BadgerStore) Mutate(mutations []storage.Mutation) error {
 	})
 }
 
-func (s BadgerStore) GetRange(prefix byte, start, end []byte) (storage.KVRange, error) {
-	result := make(storage.KVRange, 0)
+func (s BadgerStore) GetRange(prefix byte, start, end []byte) (common.KVRange, error) {
+	result := make(common.KVRange, 0)
 	startKey := append([]byte{prefix}, start...)
 	endKey := append([]byte{prefix}, end...)
 	err := s.db.View(func(txn *badger.Txn) error {
@@ -61,7 +61,7 @@ func (s BadgerStore) GetRange(prefix byte, start, end []byte) (storage.KVRange, 
 			if err != nil {
 				return err
 			}
-			result = append(result, storage.KVPair{key[1:], value})
+			result = append(result, common.KVPair{key[1:], value})
 		}
 		return nil
 	})
@@ -71,8 +71,8 @@ func (s BadgerStore) GetRange(prefix byte, start, end []byte) (storage.KVRange, 
 	return result, nil
 }
 
-func (s BadgerStore) Get(prefix byte, key []byte) (*storage.KVPair, error) {
-	result := new(storage.KVPair)
+func (s BadgerStore) Get(prefix byte, key []byte) (*common.KVPair, error) {
+	result := new(common.KVPair)
 	result.Key = key
 	err := s.db.View(func(txn *badger.Txn) error {
 		k := append([]byte{prefix}, key...)

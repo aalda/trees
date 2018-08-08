@@ -38,10 +38,9 @@ func (v *ComputeHashVisitor) VisitLeaf(pos Position, value []byte) interface{} {
 	return v.leafHash(pos.Bytes(), value)
 }
 
-func (v *ComputeHashVisitor) VisitCached(pos Position) interface{} {
+func (v *ComputeHashVisitor) VisitCached(pos Position, cachedDigest Digest) interface{} {
 	//fmt.Printf("Getting cached hash in position: %v\n", pos)
-	digest, _ := v.cache.Get(pos)
-	return digest
+	return cachedDigest
 }
 
 func (v *ComputeHashVisitor) VisitCacheable(pos Position, result interface{}) interface{} {

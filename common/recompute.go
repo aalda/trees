@@ -30,7 +30,7 @@ func (v *RecomputeHashVisitor) VisitLeaf(pos Position, value []byte) interface{}
 	return v.decorated.VisitLeaf(pos, value)
 }
 
-func (v *RecomputeHashVisitor) VisitCached(pos Position) interface{} {
+func (v *RecomputeHashVisitor) VisitCached(pos Position, cachedDigest Digest) interface{} {
 	fmt.Printf("Getting hash from path in position: %v\n", pos)
 	return v.auditPath[pos.StringId()]
 }

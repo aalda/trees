@@ -1,19 +1,20 @@
 package common
 
-import (
-	"github.com/aalda/trees/storage"
-)
-
 type Cache interface {
 	Get(pos Position) (Digest, bool)
 }
 
-type PassThroughCache struct {
-	prefix byte
-	store  storage.Store
+type ModifiableCache interface {
+	Put(pos Position, value Digest)
+	Cache
 }
 
-func NewPassThroughCache(prefix byte, store storage.Store) *PassThroughCache {
+type PassThroughCache struct {
+	prefix byte
+	store  Store
+}
+
+func NewPassThroughCache(prefix byte, store Store) *PassThroughCache {
 	return &PassThroughCache{prefix, store}
 }
 
@@ -29,6 +30,27 @@ func (c PassThroughCache) Get(pos Position) (Digest, bool) {
 }
 
 const keySize = 34
+
+type SimpleCache struct {
+	cached map[[keySize]byte]Digest
+}
+
+func NewSimpleCache(size uint64) *SimpleCache {
+	return &SimpleCache{make(map[[keySize]byte]Digest, size)}
+}
+
+func (c SimpleCache) Get(pos Position) (Digest, bool) {
+	var key [keySize]byte
+	copy(key[:], pos.Bytes())
+	digest, ok := c.cached[key]
+	return digest, ok
+}
+
+func (c *SimpleCache) Put(pos Position, value Digest) {
+	var key [keySize]byte
+	copy(key[:], pos.Bytes())
+	c.cached[key] = value
+}
 
 type TwoLevelCache struct {
 	decorated Cache

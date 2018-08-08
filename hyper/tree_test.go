@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/aalda/trees/common"
-	"github.com/aalda/trees/storage"
 	"github.com/aalda/trees/storage/bplus"
 	"github.com/bbva/qed/testutils/rand"
 	"github.com/stretchr/testify/require"
@@ -29,10 +28,8 @@ func TestAdd(t *testing.T) {
 	}
 
 	store := bplus.NewBPlusTreeStorage()
-	cache := common.NewPassThroughCache(storage.HyperCachePrefix, store)
-	twoLevel := common.NewTwoLevelCache(10, cache)
-	fallback := common.NewFallbackCache([]byte("blah"), 8, new(common.XorHasher), twoLevel)
-	tree := NewHyperTree(new(common.XorHasher), store, fallback, 4)
+	simpleCache := common.NewSimpleCache(10)
+	tree := NewHyperTree(new(common.XorHasher), store, simpleCache, 4)
 
 	for i, c := range testCases {
 		index := uint64(i)
@@ -46,14 +43,11 @@ func BenchmarkAdd(b *testing.B) {
 	defer closeF()
 
 	hasher := common.NewSha256Hasher()
-	cache := common.NewPassThroughCache(storage.HyperCachePrefix, store)
-	twoLevel := common.NewTwoLevelCache(1<<25, cache)
-	fallback := common.NewFallbackCache([]byte("blah"), hasher.Len(), common.NewSha256Hasher(), twoLevel)
-	tree := NewHyperTree(common.NewSha256Hasher(), store, fallback, hasher.Len()-25)
+	simpleCache := common.NewSimpleCache(1 << 25)
+	tree := NewHyperTree(common.NewSha256Hasher(), store, simpleCache, hasher.Len()-25)
 
-	//cache := common.NewPas.NewSimpleCache(1 << 25)
 	b.ResetTimer()
-	b.N = 10000
+	b.N = 100000
 	for i := 0; i < b.N; i++ {
 		key := hasher.Do(rand.Bytes(32))
 		tree.Add(key, uint64(i))
