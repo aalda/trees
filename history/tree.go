@@ -51,7 +51,7 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 	log.Debugf("Pruned tree: %v", root)
 
 	// visit the pruned tree
-	rh := root.Accept(caching).(common.Digest)
+	rh := root.PostOrder(caching).(common.Digest)
 
 	// persist mutations
 	cachedElements := caching.Result()
@@ -101,7 +101,7 @@ func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 	log.Debugf("Pruned tree: %v", root)
 
 	// visit the pruned tree
-	root.Accept(calcAuditPath)
+	root.PostOrder(calcAuditPath)
 	return NewMembershipProof(calcAuditPath.Result())
 }
 
@@ -125,7 +125,7 @@ func (t *HistoryTree) VerifyMembership(proof *MembershipProof, version uint64, e
 	log.Debugf("Pruned tree: %v", root)
 
 	// visit the pruned tree
-	recomputed := root.Accept(computeHash).(common.Digest)
+	recomputed := root.PostOrder(computeHash).(common.Digest)
 	return bytes.Equal(recomputed, expectedDigest)
 }
 
@@ -151,6 +151,6 @@ func (t *HistoryTree) ProveConsistency(start, end uint64) *IncrementalProof {
 	log.Debugf("Pruned tree: %v", root)
 
 	// visit the pruned tree
-	root.Accept(calcAuditPath)
+	root.PostOrder(calcAuditPath)
 	return NewIncrementalProof(calcAuditPath.Result())
 }

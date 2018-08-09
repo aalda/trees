@@ -70,7 +70,11 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 	log.Debugf("Pruned tree: %v", root)
 
 	// visit the pruned tree
-	rh := root.Accept(caching).(common.Digest)
+	rh := root.PostOrder(caching).(common.Digest)
+
+	// print := common.NewPrintVisitor(t.hasher.Len())
+	// root.PreOrder(print)
+	// log.Debugf(print.Result())
 
 	// persist mutations
 	cachedElements := caching.Result()

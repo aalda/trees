@@ -8,11 +8,11 @@ type CachedElement struct {
 }
 
 type CachingVisitor struct {
-	decorated Visitor
+	decorated PostOrderVisitor
 	elements  []CachedElement
 }
 
-func NewCachingVisitor(decorated Visitor) *CachingVisitor {
+func NewCachingVisitor(decorated PostOrderVisitor) *CachingVisitor {
 	return &CachingVisitor{
 		decorated: decorated,
 		elements:  make([]CachedElement, 0),

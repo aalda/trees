@@ -14,11 +14,11 @@ func NewIncrementalProof(path common.AuditPath) *IncrementalProof {
 }
 
 type IncAuditPathVisitor struct {
-	decorated common.Visitor
+	decorated common.PostOrderVisitor
 	auditPath common.AuditPath
 }
 
-func NewIncAuditPathVisitor(decorated common.Visitor) *IncAuditPathVisitor {
+func NewIncAuditPathVisitor(decorated common.PostOrderVisitor) *IncAuditPathVisitor {
 	return &IncAuditPathVisitor{decorated, make(common.AuditPath)}
 }
 
