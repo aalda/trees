@@ -1,5 +1,7 @@
 package common
 
+import "github.com/aalda/trees/log"
+
 type Commitment struct {
 	Version uint64
 	Digest  Digest
@@ -19,32 +21,32 @@ func NewComputeHashVisitor(hasher Hasher, cache Cache) *ComputeHashVisitor {
 }
 
 func (v *ComputeHashVisitor) VisitRoot(pos Position, leftResult, rightResult interface{}) interface{} {
-	//fmt.Printf("Computing root hash in position: %v\n", pos)
+	log.Debugf("Computing root hash in position: %v", pos)
 	return v.interiorHash(pos.Bytes(), leftResult.(Digest), rightResult.(Digest))
 }
 
 func (v *ComputeHashVisitor) VisitNode(pos Position, leftResult, rightResult interface{}) interface{} {
-	//fmt.Printf("Computing node hash in position: %v\n", pos)
+	log.Debugf("Computing node hash in position: %v", pos)
 	return v.interiorHash(pos.Bytes(), leftResult.(Digest), rightResult.(Digest))
 }
 
 func (v *ComputeHashVisitor) VisitPartialNode(pos Position, leftResult interface{}) interface{} {
-	//fmt.Printf("Computing partial node hash in position: %v\n", pos)
+	log.Debugf("Computing partial node hash in position: %v", pos)
 	return v.leafHash(pos.Bytes(), leftResult.(Digest))
 }
 
 func (v *ComputeHashVisitor) VisitLeaf(pos Position, value []byte) interface{} {
-	//fmt.Printf("Computing leaf hash in position: %v\n", pos)
+	log.Debugf("Computing leaf hash in position: %v", pos)
 	return v.leafHash(pos.Bytes(), value)
 }
 
 func (v *ComputeHashVisitor) VisitCached(pos Position, cachedDigest Digest) interface{} {
-	//fmt.Printf("Getting cached hash in position: %v\n", pos)
+	log.Debugf("Getting cached hash in position: %v", pos)
 	return cachedDigest
 }
 
 func (v *ComputeHashVisitor) VisitCacheable(pos Position, result interface{}) interface{} {
-	//fmt.Println("Getting cacheable value in position: %v\n", pos)
+	log.Debugf("Getting cacheable value in position: %v", pos)
 	return result
 }
 

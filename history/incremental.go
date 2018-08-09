@@ -1,9 +1,8 @@
 package history
 
 import (
-	"fmt"
-
 	"github.com/aalda/trees/common"
+	"github.com/aalda/trees/log"
 )
 
 type IncrementalProof struct {
@@ -48,7 +47,7 @@ func (v *IncAuditPathVisitor) VisitLeaf(pos common.Position, eventDigest []byte)
 
 func (v *IncAuditPathVisitor) VisitCached(pos common.Position, cachedDigest common.Digest) interface{} {
 	digest := v.decorated.VisitCached(pos, cachedDigest)
-	fmt.Printf("Adding cached to path in position: %v\n", pos)
+	log.Debugf("Adding cached to path in position: %v\n", pos)
 	v.auditPath[pos.StringId()] = digest.(common.Digest)
 	return digest
 }

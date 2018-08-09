@@ -1,8 +1,6 @@
 package common
 
-import (
-	"fmt"
-)
+import "github.com/aalda/trees/log"
 
 // TODO this could be the same ComputeHashVisitor if we abstract the AuditPath interface to make equal to Store
 type RecomputeHashVisitor struct {
@@ -31,11 +29,11 @@ func (v *RecomputeHashVisitor) VisitLeaf(pos Position, value []byte) interface{}
 }
 
 func (v *RecomputeHashVisitor) VisitCached(pos Position, cachedDigest Digest) interface{} {
-	fmt.Printf("Getting hash from path in position: %v\n", pos)
+	log.Debugf("Getting hash from path in position: %v", pos)
 	return v.auditPath[pos.StringId()]
 }
 
 func (v *RecomputeHashVisitor) VisitCacheable(pos Position, result interface{}) interface{} {
-	fmt.Println("Getting cacheable value in position: %v\n", pos)
+	log.Debugf("Getting cacheable value in position: %v", pos)
 	return result
 }

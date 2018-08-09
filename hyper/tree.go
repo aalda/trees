@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/aalda/trees/common"
-	//. "github.com/aalda/trees/logging"
+	"github.com/aalda/trees/log"
 	"github.com/aalda/trees/util"
 )
 
@@ -43,7 +43,8 @@ func newRootPosition(numBits uint16) common.Position {
 func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commitment {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	//fmt.Printf("Adding event %b with version %d\n", eventDigest, version)
+
+	log.Debugf("Adding event %b with version %d\n", eventDigest, version)
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
@@ -66,25 +67,23 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 	traverser := NewHyperTraverser(t.hasher.Len(), t.cacheLevel, t.store, t.defaultHashes)
 	root := traverser.Traverse(newRootPosition(t.hasher.Len()), navigator, t.cache, leaves)
 
+	log.Debugf("Pruned tree: %v", root)
+
 	// visit the pruned tree
 	rh := root.Accept(caching).(common.Digest)
-
-	//Trace.Println(root)
 
 	// persist mutations
 	cachedElements := caching.Result()
 	mutations := make([]common.Mutation, len(cachedElements))
-	for _, e := range cachedElements {
-		mutation := common.NewMutation(common.HyperCachePrefix, e.Pos.Bytes(), e.Digest)
-		mutations = append(mutations, *mutation)
-
+	for i, e := range cachedElements {
+		mutations[i] = *common.NewMutation(common.HyperCachePrefix, e.Pos.Bytes(), e.Digest)
 		// update cache
 		t.cache.Put(e.Pos, e.Digest)
 	}
 	mutations = append(mutations, *leafMutation)
 	t.store.Mutate(mutations)
 
-	//fmt.Println(mutations)
+	log.Debugf("Mutations: %v", mutations)
 
 	return common.NewCommitment(version, rh)
 }

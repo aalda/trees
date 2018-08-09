@@ -1,5 +1,7 @@
 package common
 
+import "github.com/aalda/trees/log"
+
 type CachedElement struct {
 	Pos    Position
 	Digest Digest
@@ -47,7 +49,7 @@ func (v *CachingVisitor) VisitCached(pos Position, cachedDigest Digest) interfac
 }
 
 func (v *CachingVisitor) VisitCacheable(pos Position, result interface{}) interface{} {
-	//fmt.Printf("Caching digest with position: %v\n", pos)
+	log.Debugf("Caching digest with position: %v", pos)
 	element := &CachedElement{pos, result.(Digest)}
 	v.elements = append(v.elements, *element)
 	return result

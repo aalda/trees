@@ -2,11 +2,11 @@ package history
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"sync"
 
 	"github.com/aalda/trees/common"
+	"github.com/aalda/trees/log"
 )
 
 type HistoryTree struct {
@@ -32,7 +32,8 @@ func (t *HistoryTree) getDepth(version uint64) uint16 {
 func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Commitment {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	//fmt.Printf("Adding event %b with version %d\n", eventDigest, version)
+
+	log.Debugf("Adding event %b with version %d\n", eventDigest, version)
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
@@ -46,7 +47,8 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 	// traverse from root and generate a visitable pruned tree
 	traverser := NewHistoryTraverser(eventDigest)
 	root := traverser.Traverse(t.newRootPosition(version), navigator, t.cache)
-	//fmt.Printf("Pruned tree: %v\n", root)
+
+	log.Debugf("Pruned tree: %v", root)
 
 	// visit the pruned tree
 	rh := root.Accept(caching).(common.Digest)
@@ -74,7 +76,7 @@ func NewMembershipProof(path common.AuditPath) *MembershipProof {
 func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	fmt.Printf("Proving membership for index %d with version %d\n", index, version)
+	log.Debugf("Proving membership for index %d with version %d", index, version)
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
@@ -95,7 +97,8 @@ func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 	// traverse from root and generate a visitable pruned tree
 	traverser := NewHistoryTraverser(nil)
 	root := traverser.Traverse(t.newRootPosition(version), navigator, t.cache)
-	fmt.Printf("Pruned tree: %v\n", root)
+
+	log.Debugf("Pruned tree: %v", root)
 
 	// visit the pruned tree
 	root.Accept(calcAuditPath)
@@ -105,7 +108,7 @@ func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 func (t *HistoryTree) VerifyMembership(proof *MembershipProof, version uint64, eventDigest, expectedDigest common.Digest) bool {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	fmt.Printf("Verifying membership for version %d\n", version)
+	log.Debugf("Verifying membership for version %d", version)
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
@@ -118,7 +121,8 @@ func (t *HistoryTree) VerifyMembership(proof *MembershipProof, version uint64, e
 	// traverse from root and generate a visitable pruned tree
 	traverser := NewHistoryTraverser(eventDigest)
 	root := traverser.Traverse(t.newRootPosition(version), navigator, proof.AuditPath)
-	fmt.Printf("Pruned tree: %v\n", root)
+
+	log.Debugf("Pruned tree: %v", root)
 
 	// visit the pruned tree
 	recomputed := root.Accept(computeHash).(common.Digest)
@@ -128,7 +132,7 @@ func (t *HistoryTree) VerifyMembership(proof *MembershipProof, version uint64, e
 func (t *HistoryTree) ProveConsistency(start, end uint64) *IncrementalProof {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	fmt.Printf("Proving consistency between versions %d and %d\n", start, end)
+	log.Debugf("Proving consistency between versions %d and %d", start, end)
 
 	// visitors
 	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
@@ -143,7 +147,8 @@ func (t *HistoryTree) ProveConsistency(start, end uint64) *IncrementalProof {
 	// traverse from root and generate a visitable pruned tree
 	traverser := NewHistoryTraverser(nil)
 	root := traverser.Traverse(t.newRootPosition(end), navigator, t.cache)
-	fmt.Printf("Pruned tree: %v\n", root)
+
+	log.Debugf("Pruned tree: %v", root)
 
 	// visit the pruned tree
 	root.Accept(calcAuditPath)

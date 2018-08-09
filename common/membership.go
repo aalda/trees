@@ -1,8 +1,6 @@
 package common
 
-import (
-	"fmt"
-)
+import "github.com/aalda/trees/log"
 
 // TODO unify with incremental -> we need to unify cachedresolvers before
 
@@ -41,7 +39,7 @@ func (v *AuditPathVisitor) VisitLeaf(pos Position, eventDigest []byte) interface
 
 func (v *AuditPathVisitor) VisitCached(pos Position, cachedDigest Digest) interface{} {
 	digest := v.decorated.VisitCached(pos, cachedDigest)
-	fmt.Printf("Adding cached to path in position: %v\n", pos)
+	log.Debugf("Adding cached to path in position: %v", pos)
 	v.auditPath[pos.StringId()] = digest.(Digest)
 	return digest
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/aalda/trees/common"
+	"github.com/aalda/trees/log"
 	"github.com/aalda/trees/storage/bplus"
 	"github.com/aalda/trees/util"
 
@@ -13,6 +14,8 @@ import (
 )
 
 func TestAdd(t *testing.T) {
+
+	log.SetLogger("TestAdd", log.DEBUG)
 
 	testCases := []struct {
 		eventDigest      common.Digest
@@ -43,6 +46,8 @@ func TestAdd(t *testing.T) {
 }
 
 func TestProveMembership(t *testing.T) {
+
+	log.SetLogger("TestProveMembership", log.DEBUG)
 
 	testCases := []struct {
 		eventDigest common.Digest
@@ -103,6 +108,9 @@ func TestProveMembership(t *testing.T) {
 }
 
 func TestProveMembershipNonConsecutive(t *testing.T) {
+
+	log.SetLogger("TestProveMembershipNonConsecutive", log.DEBUG)
+
 	store := bplus.NewBPlusTreeStorage()
 	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)
@@ -120,6 +128,8 @@ func TestProveMembershipNonConsecutive(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
+
+	log.SetLogger("TestVerify", log.DEBUG)
 
 	testCases := []struct {
 		eventDigest    common.Digest
@@ -193,6 +203,8 @@ func TestVerify(t *testing.T) {
 
 func TestProveConsistency(t *testing.T) {
 
+	log.SetLogger("TestProveConsistency", log.DEBUG)
+
 	testCases := []struct {
 		eventDigest common.Digest
 		auditPath   common.AuditPath
@@ -254,6 +266,9 @@ func TestProveConsistency(t *testing.T) {
 }
 
 func TestProveConsistencyNonConsecutive(t *testing.T) {
+
+	log.SetLogger("TestProveConsistencyNonConsecutive", log.DEBUG)
+
 	store := bplus.NewBPlusTreeStorage()
 	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)
@@ -274,6 +289,9 @@ func TestProveConsistencyNonConsecutive(t *testing.T) {
 }
 
 func TestProveConsistencySameVersions(t *testing.T) {
+
+	log.SetLogger("TestProveConsistencySameVersions", log.DEBUG)
+
 	store := bplus.NewBPlusTreeStorage()
 	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
 	tree := NewHistoryTree(new(common.XorHasher), store, cache)

@@ -1,12 +1,10 @@
 package hyper
 
 import (
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/aalda/trees/common"
-	"github.com/aalda/trees/logging"
+	"github.com/aalda/trees/log"
 	"github.com/aalda/trees/storage/bplus"
 	"github.com/bbva/qed/testutils/rand"
 	"github.com/stretchr/testify/require"
@@ -14,7 +12,7 @@ import (
 
 func TestAdd(t *testing.T) {
 
-	logging.Init(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
+	log.SetLogger("TestAdd", log.DEBUG)
 
 	testCases := []struct {
 		eventDigest      common.Digest
@@ -45,13 +43,13 @@ func TestAdd(t *testing.T) {
 
 func BenchmarkAdd(b *testing.B) {
 
-	logging.Init(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+	log.SetLogger("BenchmarkAdd", log.SILENT)
 
 	store, closeF := openBadgerStore("/var/tmp/hyper_tree_test.db")
 	defer closeF()
 
 	hasher := common.NewSha256Hasher()
-	simpleCache := common.NewSimpleCache(1 << 25)
+	simpleCache := common.NewSimpleCache(0)
 	tree := NewHyperTree(common.NewSha256Hasher(), store, simpleCache, hasher.Len()-25)
 
 	b.ResetTimer()
