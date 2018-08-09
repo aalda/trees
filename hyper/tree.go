@@ -67,14 +67,12 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 	traverser := NewHyperTraverser(t.hasher.Len(), t.cacheLevel, t.store, t.defaultHashes)
 	root := traverser.Traverse(newRootPosition(t.hasher.Len()), navigator, t.cache, leaves)
 
-	log.Debugf("Pruned tree: %v", root)
+	print := common.NewPrintVisitor(t.hasher.Len())
+	root.PreOrder(print)
+	log.Debugf("Pruned tree: %s", print.Result())
 
 	// visit the pruned tree
 	rh := root.PostOrder(caching).(common.Digest)
-
-	// print := common.NewPrintVisitor(t.hasher.Len())
-	// root.PreOrder(print)
-	// log.Debugf(print.Result())
 
 	// persist mutations
 	cachedElements := caching.Result()

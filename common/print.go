@@ -11,13 +11,11 @@ type PrintVisitor struct {
 }
 
 func NewPrintVisitor(height uint16) *PrintVisitor {
-	t := make([]string, 1)
-	t[0] = "\n"
-	return &PrintVisitor{tokens: t, height: height}
+	return &PrintVisitor{tokens: make([]string, 1), height: height}
 }
 
 func (v PrintVisitor) Result() string {
-	return strings.Join(v.tokens[:], "\n")
+	return fmt.Sprintf("\n%s", strings.Join(v.tokens[:], "\n"))
 }
 
 func (v *PrintVisitor) VisitRoot(pos Position) {
