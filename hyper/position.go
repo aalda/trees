@@ -35,7 +35,7 @@ func (p HyperPosition) Bytes() []byte {
 }
 
 func (p HyperPosition) String() string {
-	return fmt.Sprintf("Pos(index: %x, height: %d)", p.index, p.height)
+	return fmt.Sprintf("Pos(%x, %d)", p.index, p.height)
 }
 
 func (p HyperPosition) StringId() string {

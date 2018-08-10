@@ -47,32 +47,29 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 	log.Debugf("Adding event %b with version %d\n", eventDigest, version)
 
 	// visitors
-	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
+	computeHash := common.NewComputeHashVisitor(t.hasher)
 	caching := common.NewCachingVisitor(computeHash)
 
-	// navigator
-	targetPos := NewPosition(eventDigest, 0)
-	navigator := NewHyperNavigator(targetPos, t.hasher.Len(), t.cacheLevel)
-
-	// create a mutation for the new leaf
+	// build pruning context
 	versionAsBytes := util.Uint64AsBytes(version)
-	leafMutation := common.NewMutation(common.IndexPrefix, eventDigest, versionAsBytes)
-
-	// create a leaves range with the new leaf to insert
-	leaves := common.NewKVRange()
-	leaf := common.NewKVPair(eventDigest, versionAsBytes)
-	leaves = leaves.InsertSorted(leaf)
+	context := PruningContext{
+		navigator:     NewHyperTreeNavigator(t.hasher.Len()),
+		cacheResolver: NewSingleTargetedCacheResolver(t.hasher.Len(), t.cacheLevel, eventDigest),
+		cache:         t.cache,
+		store:         t.store,
+		defaultHashes: t.defaultHashes,
+		cacheLevel:    t.cacheLevel,
+	}
 
 	// traverse from root and generate a visitable pruned tree
-	traverser := NewHyperTraverser(t.hasher.Len(), t.cacheLevel, t.store, t.defaultHashes)
-	root := traverser.Traverse(newRootPosition(t.hasher.Len()), navigator, t.cache, leaves)
+	pruned := NewInsertPruner(eventDigest, versionAsBytes, context).Prune()
 
-	print := common.NewPrintVisitor(t.hasher.Len())
-	root.PreOrder(print)
-	log.Debugf("Pruned tree: %s", print.Result())
+	// print := common.NewPrintVisitor(t.hasher.Len())
+	// pruned.PreOrder(print)
+	// log.Debugf("Pruned tree: %s", print.Result())
 
 	// visit the pruned tree
-	rh := root.PostOrder(caching).(common.Digest)
+	rh := pruned.PostOrder(caching).(common.Digest)
 
 	// persist mutations
 	cachedElements := caching.Result()
@@ -82,10 +79,36 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 		// update cache
 		t.cache.Put(e.Pos, e.Digest)
 	}
+	// create a mutation for the new leaf
+	leafMutation := common.NewMutation(common.IndexPrefix, eventDigest, versionAsBytes)
 	mutations = append(mutations, *leafMutation)
-	t.store.Mutate(mutations)
+	t.store.Mutate(mutations) // TODO the mutations should be returned and persited at the balloon level
 
 	log.Debugf("Mutations: %v", mutations)
 
 	return common.NewCommitment(version, rh)
+}
+
+type MembershipProof struct {
+	AuditPath common.AuditPath
+}
+
+func (t *HyperTree) Get(eventDigest common.Digest) (version uint64, proof *MembershipProof) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	log.Debugf("Getting version for event %b\n", eventDigest)
+
+	// visitors
+	//computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
+
+	// navigator
+	//targetPos := NewPosition(eventDigest, 0)
+	//navigator := NewHyperNavigator(targetPos, t.hasher.Len(), t.cacheLevel)
+
+	// traverse from root and generate a visitable pruned tree
+	//traverser := NewHyperTraverser(t.hasher.Len(), t.cacheLevel, t.store, t.defaultHashes)
+	//pruned := traverser.TraverseAudit(newRootPosition(t.hasher.Len()), navigator, t.cache)
+
+	return 0, nil
 }

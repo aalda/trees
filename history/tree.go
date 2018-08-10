@@ -36,22 +36,25 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 	log.Debugf("Adding event %b with version %d\n", eventDigest, version)
 
 	// visitors
-	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
+	computeHash := common.NewComputeHashVisitor(t.hasher)
 	caching := common.NewCachingVisitor(computeHash)
 
-	// navigator
-	targetPos := NewPosition(version, 0)
-	resolver := NewMembershipCachedResolver(targetPos)
-	navigator := NewHistoryNavigator(resolver, targetPos, targetPos, t.getDepth(version))
+	// build pruning context
+	context := PruningContext{
+		navigator:     NewHistoryTreeNavigator(version),
+		cacheResolver: NewSingleTargetedCacheResolver(version),
+		cache:         t.cache,
+	}
 
 	// traverse from root and generate a visitable pruned tree
-	traverser := NewHistoryTraverser(eventDigest)
-	root := traverser.Traverse(t.newRootPosition(version), navigator, t.cache)
+	pruned := NewInsertPruner(eventDigest, context).Prune()
 
-	log.Debugf("Pruned tree: %v", root)
+	print := common.NewPrintVisitor(t.getDepth(version))
+	pruned.PreOrder(print)
+	log.Debugf("Pruned tree: %s", print.Result())
 
 	// visit the pruned tree
-	rh := root.PostOrder(caching).(common.Digest)
+	rh := pruned.PostOrder(caching).(common.Digest)
 
 	// persist mutations
 	cachedElements := caching.Result()
@@ -79,29 +82,32 @@ func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 	log.Debugf("Proving membership for index %d with version %d", index, version)
 
 	// visitors
-	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
+	computeHash := common.NewComputeHashVisitor(t.hasher)
 	calcAuditPath := common.NewAuditPathVisitor(computeHash)
 
-	// navigator
-	startPos := NewPosition(index, 0)
-	endPos := NewPosition(version, 0)
-	var resolver CachedResolver
+	// build pruning context
+	var resolver CacheResolver
 	switch index == version {
 	case true:
-		resolver = NewMembershipCachedResolver(startPos)
+		resolver = NewSingleTargetedCacheResolver(version)
 	case false:
-		resolver = NewIncrementalCachedResolver(startPos, endPos)
+		resolver = NewDoubleTargetedCacheResolver(index, version)
 	}
-	navigator := NewHistoryNavigator(resolver, startPos, endPos, t.getDepth(version))
+	context := PruningContext{
+		navigator:     NewHistoryTreeNavigator(version),
+		cacheResolver: resolver,
+		cache:         t.cache,
+	}
 
 	// traverse from root and generate a visitable pruned tree
-	traverser := NewHistoryTraverser(nil)
-	root := traverser.Traverse(t.newRootPosition(version), navigator, t.cache)
+	pruned := NewSearchPruner(context).Prune()
 
-	log.Debugf("Pruned tree: %v", root)
+	print := common.NewPrintVisitor(t.getDepth(version))
+	pruned.PreOrder(print)
+	log.Debugf("Pruned tree: %s", print.Result())
 
 	// visit the pruned tree
-	root.PostOrder(calcAuditPath)
+	pruned.PostOrder(calcAuditPath)
 	return NewMembershipProof(calcAuditPath.Result())
 }
 
@@ -111,22 +117,33 @@ func (t *HistoryTree) VerifyMembership(proof *MembershipProof, version uint64, e
 	log.Debugf("Verifying membership for version %d", version)
 
 	// visitors
-	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
+	computeHash := common.NewComputeHashVisitor(t.hasher)
 
-	// navigator
-	targetPos := NewPosition(version, 0)
-	resolver := NewMembershipCachedResolver(targetPos)
-	navigator := NewHistoryNavigator(resolver, targetPos, targetPos, t.getDepth(version))
+	// build pruning context
+	context := PruningContext{
+		navigator:     NewHistoryTreeNavigator(version),
+		cacheResolver: NewSingleTargetedCacheResolver(version),
+		cache:         proof.AuditPath,
+	}
 
 	// traverse from root and generate a visitable pruned tree
-	traverser := NewHistoryTraverser(eventDigest)
-	root := traverser.Traverse(t.newRootPosition(version), navigator, proof.AuditPath)
+	pruned := NewVerifyPruner(eventDigest, context).Prune()
 
-	log.Debugf("Pruned tree: %v", root)
+	print := common.NewPrintVisitor(t.getDepth(version))
+	pruned.PreOrder(print)
+	log.Debugf("Pruned tree: %s", print.Result())
 
 	// visit the pruned tree
-	recomputed := root.PostOrder(computeHash).(common.Digest)
+	recomputed := pruned.PostOrder(computeHash).(common.Digest)
 	return bytes.Equal(recomputed, expectedDigest)
+}
+
+type IncrementalProof struct {
+	AuditPath common.AuditPath
+}
+
+func NewIncrementalProof(path common.AuditPath) *IncrementalProof {
+	return &IncrementalProof{path}
 }
 
 func (t *HistoryTree) ProveConsistency(start, end uint64) *IncrementalProof {
@@ -135,22 +152,24 @@ func (t *HistoryTree) ProveConsistency(start, end uint64) *IncrementalProof {
 	log.Debugf("Proving consistency between versions %d and %d", start, end)
 
 	// visitors
-	computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
-	calcAuditPath := NewIncAuditPathVisitor(computeHash)
+	computeHash := common.NewComputeHashVisitor(t.hasher)
+	calcAuditPath := common.NewAuditPathVisitor(computeHash)
 
-	// navigator
-	startPos := NewPosition(start, 0)
-	endPos := NewPosition(end, 0)
-	resolver := NewIncrementalCachedResolver(startPos, endPos)
-	navigator := NewHistoryNavigator(resolver, startPos, endPos, t.getDepth(end))
+	// build pruning context
+	context := PruningContext{
+		navigator:     NewHistoryTreeNavigator(end),
+		cacheResolver: NewIncrementalCacheResolver(start, end),
+		cache:         t.cache,
+	}
 
 	// traverse from root and generate a visitable pruned tree
-	traverser := NewHistoryTraverser(nil)
-	root := traverser.Traverse(t.newRootPosition(end), navigator, t.cache)
+	pruned := NewSearchPruner(context).Prune()
 
-	log.Debugf("Pruned tree: %v", root)
+	print := common.NewPrintVisitor(t.getDepth(end))
+	pruned.PreOrder(print)
+	log.Debugf("Pruned tree: %s", print.Result())
 
 	// visit the pruned tree
-	root.PostOrder(calcAuditPath)
+	pruned.PostOrder(calcAuditPath)
 	return NewIncrementalProof(calcAuditPath.Result())
 }

@@ -39,7 +39,7 @@ func (p HistoryPosition) Bytes() []byte {
 }
 
 func (p HistoryPosition) String() string {
-	return fmt.Sprintf("Pos(index: %d, height: %d)", p.IndexAsUint64(), p.height)
+	return fmt.Sprintf("Pos(%d, %d)", p.IndexAsUint64(), p.height)
 }
 
 func (p HistoryPosition) StringId() string {

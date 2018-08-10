@@ -13,11 +13,10 @@ func NewCommitment(version uint64, digest Digest) *Commitment {
 
 type ComputeHashVisitor struct {
 	hasher Hasher
-	cache  Cache
 }
 
-func NewComputeHashVisitor(hasher Hasher, cache Cache) *ComputeHashVisitor {
-	return &ComputeHashVisitor{hasher, cache}
+func NewComputeHashVisitor(hasher Hasher) *ComputeHashVisitor {
+	return &ComputeHashVisitor{hasher}
 }
 
 func (v *ComputeHashVisitor) VisitRoot(pos Position, leftResult, rightResult interface{}) interface{} {
