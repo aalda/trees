@@ -1,6 +1,7 @@
 package hyper
 
 import (
+	"bytes"
 	"sync"
 
 	"github.com/aalda/trees/common"
@@ -131,4 +132,35 @@ func (t *HyperTree) Get(eventDigest common.Digest) (value []byte, proof *Members
 	pruned.PostOrder(calcAuditPath)
 
 	return pair.Value, NewMembershipProof(calcAuditPath.Result()), nil // include version in audit path visitor
+}
+
+func (t *HyperTree) VerifyMembership(proof *MembershipProof, version uint64, eventDigest, expectedDigest common.Digest) bool {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	log.Debugf("Verifying membership for eventDigest %x", eventDigest)
+
+	// visitors
+	computeHash := common.NewComputeHashVisitor(t.hasher)
+
+	// build pruning context
+	versionAsBytes := util.Uint64AsBytes(version)
+	context := PruningContext{
+		navigator:     NewHyperTreeNavigator(t.hasher.Len()),
+		cacheResolver: NewSingleTargetedCacheResolver(t.hasher.Len(), t.cacheLevel, eventDigest),
+		cache:         proof.AuditPath,
+		store:         t.store,
+		defaultHashes: t.defaultHashes,
+	}
+
+	// traverse from root and generate a visitable pruned tree
+	pruned := NewVerifyPruner(eventDigest, versionAsBytes, context).Prune()
+
+	print := common.NewPrintVisitor(t.hasher.Len())
+	pruned.PreOrder(print)
+	log.Debugf("Pruned tree: %s", print.Result())
+
+	// visit the pruned tree
+	recomputed := pruned.PostOrder(computeHash).(common.Digest)
+	return bytes.Equal(recomputed, expectedDigest)
 }

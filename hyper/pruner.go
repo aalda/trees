@@ -59,7 +59,6 @@ func (p *InsertPruner) traverse(pos common.Position, leaves common.KVRange) comm
 	leftSlice, rightSlice := leaves.Split(rightPos.Index())
 	left := p.traverse(p.navigator.GoToLeft(pos), leftSlice)
 	right := p.traverse(rightPos, rightSlice)
-
 	if p.navigator.IsRoot(pos) {
 		return common.NewRoot(pos, left, right)
 	}
@@ -84,7 +83,6 @@ func (p *InsertPruner) traverseWithoutCache(pos common.Position, leaves common.K
 	leftSlice, rightSlice := leaves.Split(rightPos.Index())
 	left := p.traverseWithoutCache(p.navigator.GoToLeft(pos), leftSlice)
 	right := p.traverseWithoutCache(rightPos, rightSlice)
-
 	if p.navigator.IsRoot(pos) {
 		return common.NewRoot(pos, left, right)
 	}
@@ -132,13 +130,10 @@ func (p *SearchPruner) traverse(pos common.Position, leaves common.KVRange) comm
 	leftSlice, rightSlice := leaves.Split(rightPos.Index())
 	left := p.traverse(p.navigator.GoToLeft(pos), leftSlice)
 	right := p.traverse(rightPos, rightSlice)
-
 	if p.navigator.IsRoot(pos) {
 		return common.NewRoot(pos, left, right)
 	}
-
 	return common.NewNode(pos, left, right)
-
 }
 
 func (p *SearchPruner) traverseWithoutCache(pos common.Position, leaves common.KVRange) common.Visitable {
@@ -160,6 +155,45 @@ func (p *SearchPruner) traverseWithoutCache(pos common.Position, leaves common.K
 	leftSlice, rightSlice := leaves.Split(rightPos.Index())
 	left := p.traverseWithoutCache(p.navigator.GoToLeft(pos), leftSlice)
 	right := p.traverseWithoutCache(rightPos, rightSlice)
+	if p.navigator.IsRoot(pos) {
+		return common.NewRoot(pos, left, right)
+	}
+	return common.NewNode(pos, left, right)
+}
+
+type VerifyPruner struct {
+	key   common.Digest
+	value []byte
+	PruningContext
+}
+
+func NewVerifyPruner(key, value []byte, context PruningContext) *VerifyPruner {
+	return &VerifyPruner{key, value, context}
+}
+
+func (p *VerifyPruner) Prune() common.Visitable {
+	leaves := common.KVRange{common.NewKVPair(p.key, p.value)}
+	return p.traverse(p.navigator.Root(), leaves)
+}
+
+func (p *VerifyPruner) traverse(pos common.Position, leaves common.KVRange) common.Visitable {
+	if p.navigator.IsLeaf(pos) && len(leaves) == 1 {
+		return common.NewLeaf(pos, leaves[0].Value)
+	}
+	if !p.navigator.IsRoot(pos) && len(leaves) == 0 {
+		return common.NewCached(pos, p.defaultHashes[pos.Height()])
+	}
+	if len(leaves) > 1 && p.navigator.IsLeaf(pos) {
+		panic("this should never happen (unsorted LeavesSlice or broken split?)")
+	}
+
+	// we do a post-order traversal
+
+	// split leaves
+	rightPos := p.navigator.GoToRight(pos)
+	leftSlice, rightSlice := leaves.Split(rightPos.Index())
+	left := p.traverse(p.navigator.GoToLeft(pos), leftSlice)
+	right := p.traverse(rightPos, rightSlice)
 	if p.navigator.IsRoot(pos) {
 		return common.NewRoot(pos, left, right)
 	}

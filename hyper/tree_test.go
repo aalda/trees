@@ -6,6 +6,7 @@ import (
 	"github.com/aalda/trees/common"
 	"github.com/aalda/trees/log"
 	"github.com/aalda/trees/storage/bplus"
+	"github.com/aalda/trees/util"
 	"github.com/bbva/qed/testutils/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,6 +73,58 @@ func TestProveMembership(t *testing.T) {
 	}
 	assert.Equal(t, ap, pf.AuditPath, "Incorrect audit path")
 
+}
+
+func TestAddAndVerifyXor(t *testing.T) {
+
+	log.SetLogger("TestAddAndVerifyXor", log.DEBUG)
+
+	hasher := new(common.XorHasher)
+	store := bplus.NewBPlusTreeStorage()
+	simpleCache := common.NewSimpleCache(10)
+	tree := NewHyperTree(new(common.XorHasher), store, simpleCache, 2)
+
+	key := hasher.Do(common.Digest("a test event"))
+	value := uint64(0)
+
+	commitment := tree.Add(key, value)
+
+	actualValue, proof, err := tree.Get(key)
+	assert.Nil(t, err, "Error must be nil")
+
+	assert.Equal(t, util.Uint64AsBytes(value), actualValue, "Incorrect actual value")
+
+	correct := tree.VerifyMembership(proof, value, key, commitment.Digest)
+
+	if !correct {
+		t.Errorf("Key %x should be a member", key)
+	}
+}
+
+func TestAddAndVerifySha256(t *testing.T) {
+
+	log.SetLogger("TestAddAndVerifySha256", log.DEBUG)
+
+	hasher := common.NewSha256Hasher()
+	store := bplus.NewBPlusTreeStorage()
+	simpleCache := common.NewSimpleCache(10)
+	tree := NewHyperTree(common.NewSha256Hasher(), store, simpleCache, 2)
+
+	key := hasher.Do(common.Digest("a test event"))
+	value := uint64(0)
+
+	commitment := tree.Add(key, value)
+
+	actualValue, proof, err := tree.Get(key)
+	assert.Nil(t, err, "Error must be nil")
+
+	assert.Equal(t, util.Uint64AsBytes(value), actualValue, "Incorrect actual value")
+
+	correct := tree.VerifyMembership(proof, value, key, commitment.Digest)
+
+	if !correct {
+		t.Errorf("Key %x should be a member", key)
+	}
 }
 
 func BenchmarkAdd(b *testing.B) {
