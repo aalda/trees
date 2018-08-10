@@ -315,6 +315,53 @@ func max(x, y int) int {
 	return y
 }
 
+func TestVerifyIncremental(t *testing.T) {
+
+	log.SetLogger("TestVerifyIncremental", log.DEBUG)
+
+	testCases := []struct {
+		auditPath   common.AuditPath
+		start       uint64
+		end         uint64
+		startDigest common.Digest
+		endDigest   common.Digest
+	}{
+		{
+			common.AuditPath{"0|1": common.Digest{0x1}, "2|0": common.Digest{0x2}, "3|0": common.Digest{0x3}, "4|1": common.Digest{0x1}, "6|0": common.Digest{0x6}},
+			2, 6, common.Digest{0x3}, common.Digest{0x7},
+		},
+		{
+			common.AuditPath{"0|1": common.Digest{0x1}, "2|0": common.Digest{0x2}, "3|0": common.Digest{0x3}, "4|1": common.Digest{0x1}, "6|0": common.Digest{0x6}, "7|0": common.Digest{0x7}},
+			2, 7, common.Digest{0x3}, common.Digest{0x0},
+		},
+		{
+			common.AuditPath{"0|2": common.Digest{0x0}, "4|0": common.Digest{0x4}, "5|0": common.Digest{0x5}, "6|0": common.Digest{0x6}},
+			4, 6, common.Digest{0x4}, common.Digest{0x7},
+		},
+		{
+			common.AuditPath{"0|2": common.Digest{0x0}, "4|0": common.Digest{0x4}, "5|0": common.Digest{0x5}, "6|0": common.Digest{0x6}, "7|0": common.Digest{0x7}},
+			4, 7, common.Digest{0x4}, common.Digest{0x0},
+		},
+		{
+			common.AuditPath{"2|0": common.Digest{0x2}, "3|0": common.Digest{0x3}, "4|0": common.Digest{0x4}, "0|1": common.Digest{0x1}},
+			2, 4, common.Digest{0x3}, common.Digest{0x4},
+		},
+		{
+			common.AuditPath{"0|2": common.Digest{0x0}, "4|1": common.Digest{0x1}, "6|0": common.Digest{0x6}, "7|0": common.Digest{0x7}},
+			6, 7, common.Digest{0x7}, common.Digest{0x0},
+		},
+	}
+
+	store := bplus.NewBPlusTreeStorage()
+	cache := common.NewPassThroughCache(common.HistoryCachePrefix, store)
+	tree := NewHistoryTree(new(common.XorHasher), store, cache)
+
+	for _, c := range testCases {
+		proof := NewIncrementalProof(c.auditPath)
+		require.Truef(t, tree.VerifyIncremental(proof, c.start, c.end, c.startDigest, c.endDigest), "Events between %d and %d should be consistent", c.start, c.end)
+	}
+}
+
 func BenchmarkAdd(b *testing.B) {
 	store, closeF := openBadgerStore("/var/tmp/hyper_tree_test.db")
 	defer closeF()

@@ -1,6 +1,8 @@
 package history
 
-import "github.com/aalda/trees/common"
+import (
+	"github.com/aalda/trees/common"
+)
 
 type PruningContext struct {
 	navigator     common.TreeNavigator

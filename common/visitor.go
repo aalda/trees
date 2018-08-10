@@ -4,10 +4,6 @@ import (
 	"fmt"
 )
 
-type Traversable interface {
-	Traverse(pos Position, navigator Navigator, cache Cache) Visitable
-}
-
 type PostOrderVisitor interface {
 	VisitRoot(pos Position, leftResult, rightResult interface{}) interface{}
 	VisitNode(pos Position, leftResult, rightResult interface{}) interface{}

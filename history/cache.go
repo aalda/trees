@@ -1,6 +1,10 @@
 package history
 
-import "github.com/aalda/trees/common"
+import (
+	"fmt"
+
+	"github.com/aalda/trees/common"
+)
 
 type CacheResolver interface {
 	ShouldBeInCache(pos common.Position) bool
@@ -58,6 +62,38 @@ func NewIncrementalCacheResolver(start, end uint64) *IncrementalCacheResolver {
 
 func (r IncrementalCacheResolver) ShouldBeInCache(pos common.Position) bool {
 	if pos.Height() == 0 && pos.IndexAsUint64() == r.start {
+		fmt.Println("one")
+		return true
+	}
+	threshold := pos.IndexAsUint64() + pow(2, pos.Height()) - 1
+	if r.start > threshold && r.end > threshold {
+		fmt.Println("two")
+		return true
+	}
+
+	lastDescendantIndex := pos.IndexAsUint64() + pow(2, pos.Height()) - 1
+	g := pos.IndexAsUint64() > r.start && lastDescendantIndex <= r.end
+	if g {
+		fmt.Println("three")
+		fmt.Println(pos.IndexAsUint64(), r.start, lastDescendantIndex, r.end)
+	}
+	return g
+}
+
+func (r IncrementalCacheResolver) ShouldCache(pos common.Position) bool {
+	return r.end >= pos.IndexAsUint64()+pow(2, pos.Height())-1
+}
+
+type IncrementalVerifyCacheResolver struct {
+	start, end uint64
+}
+
+func NewIncrementalVerifyCacheResolver(start, end uint64) *IncrementalVerifyCacheResolver {
+	return &IncrementalVerifyCacheResolver{start, end}
+}
+
+func (r IncrementalVerifyCacheResolver) ShouldBeInCache(pos common.Position) bool {
+	if pos.Height() == 0 { // changes this
 		return true
 	}
 	threshold := pos.IndexAsUint64() + pow(2, pos.Height()) - 1
@@ -66,9 +102,9 @@ func (r IncrementalCacheResolver) ShouldBeInCache(pos common.Position) bool {
 	}
 
 	lastDescendantIndex := pos.IndexAsUint64() + pow(2, pos.Height()) - 1
-	return pos.IndexAsUint64() > r.start && lastDescendantIndex <= r.end
+	return pos.IndexAsUint64() > r.start && lastDescendantIndex < r.end // changes this
 }
 
-func (r IncrementalCacheResolver) ShouldCache(pos common.Position) bool {
+func (r IncrementalVerifyCacheResolver) ShouldCache(pos common.Position) bool {
 	return r.end >= pos.IndexAsUint64()+pow(2, pos.Height())-1
 }

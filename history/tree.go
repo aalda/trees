@@ -2,6 +2,7 @@ package history
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"sync"
 
@@ -173,4 +174,43 @@ func (t *HistoryTree) ProveConsistency(start, end uint64) *IncrementalProof {
 	// visit the pruned tree
 	pruned.PostOrder(calcAuditPath)
 	return NewIncrementalProof(calcAuditPath.Result())
+}
+
+func (t *HistoryTree) VerifyIncremental(proof *IncrementalProof, start, end uint64, startDigest, endDigest common.Digest) bool {
+
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	log.Debugf("Verifying incremental between versions %d and %d", start, end)
+
+	// visitors
+	computeHash := common.NewComputeHashVisitor(t.hasher)
+
+	// build pruning context
+	startContext := PruningContext{
+		navigator:     NewHistoryTreeNavigator(start),
+		cacheResolver: NewIncrementalVerifyCacheResolver(start, end),
+		cache:         proof.AuditPath,
+	}
+	endContext := PruningContext{
+		navigator:     NewHistoryTreeNavigator(end),
+		cacheResolver: NewIncrementalVerifyCacheResolver(start, end),
+		cache:         proof.AuditPath,
+	}
+
+	// traverse from root and generate a visitable pruned tree
+	startPruned := NewVerifyPruner(startDigest, startContext).Prune()
+	endPruned := NewVerifyPruner(endDigest, endContext).Prune()
+
+	print := common.NewPrintVisitor(t.getDepth(end))
+	startPruned.PreOrder(print)
+	log.Debugf("Start pruned tree: %s", print.Result())
+	print = common.NewPrintVisitor(t.getDepth(end))
+	endPruned.PreOrder(print)
+	log.Debugf("End pruned tree: %s", print.Result())
+
+	// visit the pruned trees
+	startRecomputed := startPruned.PostOrder(computeHash).(common.Digest)
+	endRecomputed := endPruned.PostOrder(computeHash).(common.Digest)
+	fmt.Println(startRecomputed, endRecomputed)
+	return bytes.Equal(startRecomputed, startDigest) && bytes.Equal(endRecomputed, endDigest)
 }
