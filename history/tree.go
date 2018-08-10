@@ -49,9 +49,9 @@ func (t *HistoryTree) Add(eventDigest common.Digest, version uint64) *common.Com
 	// traverse from root and generate a visitable pruned tree
 	pruned := NewInsertPruner(eventDigest, context).Prune()
 
-	print := common.NewPrintVisitor(t.getDepth(version))
-	pruned.PreOrder(print)
-	log.Debugf("Pruned tree: %s", print.Result())
+	// print := common.NewPrintVisitor(t.getDepth(version))
+	// pruned.PreOrder(print)
+	// log.Debugf("Pruned tree: %s", print.Result())
 
 	// visit the pruned tree
 	rh := pruned.PostOrder(caching).(common.Digest)
@@ -108,6 +108,7 @@ func (t *HistoryTree) ProveMembership(index, version uint64) *MembershipProof {
 
 	// visit the pruned tree
 	pruned.PostOrder(calcAuditPath)
+
 	return NewMembershipProof(calcAuditPath.Result())
 }
 

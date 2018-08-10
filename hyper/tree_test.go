@@ -7,6 +7,7 @@ import (
 	"github.com/aalda/trees/log"
 	"github.com/aalda/trees/storage/bplus"
 	"github.com/bbva/qed/testutils/rand"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,6 +40,38 @@ func TestAdd(t *testing.T) {
 		commitment := tree.Add(c.eventDigest, index)
 		require.Equalf(t, c.expectedRootHash, commitment.Digest, "Incorrect root hash for index %d", i)
 	}
+}
+
+func TestProveMembership(t *testing.T) {
+
+	log.SetLogger("TestProveMembership", log.DEBUG)
+
+	hasher := new(common.XorHasher)
+	digest := hasher.Do(common.Digest{0x0})
+	index := uint64(0)
+
+	store := bplus.NewBPlusTreeStorage()
+	simpleCache := common.NewSimpleCache(10)
+	tree := NewHyperTree(new(common.XorHasher), store, simpleCache, 2)
+
+	rh := tree.Add(digest, index)
+	assert.Equal(t, rh.Digest, common.Digest{0x0}, "Incorrect root hash")
+
+	_, pf, err := tree.Get(digest)
+	assert.Nil(t, err, "Error adding to the tree: %v", err)
+
+	ap := common.AuditPath{
+		"10|4": common.Digest{0x0},
+		"04|2": common.Digest{0x0},
+		"80|7": common.Digest{0x0},
+		"40|6": common.Digest{0x0},
+		"20|5": common.Digest{0x0},
+		"08|3": common.Digest{0x0},
+		"02|1": common.Digest{0x0},
+		"01|0": common.Digest{0x0},
+	}
+	assert.Equal(t, ap, pf.AuditPath, "Incorrect audit path")
+
 }
 
 func BenchmarkAdd(b *testing.B) {

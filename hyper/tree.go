@@ -58,7 +58,6 @@ func (t *HyperTree) Add(eventDigest common.Digest, version uint64) *common.Commi
 		cache:         t.cache,
 		store:         t.store,
 		defaultHashes: t.defaultHashes,
-		cacheLevel:    t.cacheLevel,
 	}
 
 	// traverse from root and generate a visitable pruned tree
@@ -93,22 +92,43 @@ type MembershipProof struct {
 	AuditPath common.AuditPath
 }
 
-func (t *HyperTree) Get(eventDigest common.Digest) (version uint64, proof *MembershipProof) {
+func NewMembershipProof(path common.AuditPath) *MembershipProof {
+	return &MembershipProof{path}
+}
+
+func (t *HyperTree) Get(eventDigest common.Digest) (value []byte, proof *MembershipProof, err error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
 	log.Debugf("Getting version for event %b\n", eventDigest)
 
-	// visitors
-	//computeHash := common.NewComputeHashVisitor(t.hasher, t.cache)
+	pair, err := t.store.Get(common.IndexPrefix, eventDigest) // TODO check existence
+	if err != nil {
+		return nil, nil, err
+	}
 
-	// navigator
-	//targetPos := NewPosition(eventDigest, 0)
-	//navigator := NewHyperNavigator(targetPos, t.hasher.Len(), t.cacheLevel)
+	// visitors
+	computeHash := common.NewComputeHashVisitor(t.hasher)
+	calcAuditPath := common.NewAuditPathVisitor(computeHash)
+
+	// build pruning context
+	context := PruningContext{
+		navigator:     NewHyperTreeNavigator(t.hasher.Len()),
+		cacheResolver: NewSingleTargetedCacheResolver(t.hasher.Len(), t.cacheLevel, eventDigest),
+		cache:         t.cache,
+		store:         t.store,
+		defaultHashes: t.defaultHashes,
+	}
 
 	// traverse from root and generate a visitable pruned tree
-	//traverser := NewHyperTraverser(t.hasher.Len(), t.cacheLevel, t.store, t.defaultHashes)
-	//pruned := traverser.TraverseAudit(newRootPosition(t.hasher.Len()), navigator, t.cache)
+	pruned := NewSearchPruner(eventDigest, context).Prune()
 
-	return 0, nil
+	print := common.NewPrintVisitor(t.hasher.Len())
+	pruned.PreOrder(print)
+	log.Debugf("Pruned tree: %s", print.Result())
+
+	// visit the pruned tree
+	pruned.PostOrder(calcAuditPath)
+
+	return pair.Value, NewMembershipProof(calcAuditPath.Result()), nil // include version in audit path visitor
 }
