@@ -99,10 +99,10 @@ func NewSearchPruner(key []byte, context PruningContext) *SearchPruner {
 }
 
 func (p *SearchPruner) Prune() common.Visitable {
-	return p.traverse(p.navigator.Root(), common.NewKVRange())
+	return p.traverseCache(p.navigator.Root(), common.NewKVRange())
 }
 
-func (p *SearchPruner) traverse(pos common.Position, leaves common.KVRange) common.Visitable {
+func (p *SearchPruner) traverseCache(pos common.Position, leaves common.KVRange) common.Visitable {
 	if p.cacheResolver.ShouldBeInCache(pos) {
 		digest, ok := p.cache.Get(pos)
 		if !ok {
@@ -123,22 +123,26 @@ func (p *SearchPruner) traverse(pos common.Position, leaves common.KVRange) comm
 			kvRange = kvRange.InsertSorted(l)
 		}
 		leaves = kvRange
-		return p.traverseWithoutCache(pos, leaves)
+		return p.traverse(pos, leaves)
 	}
 
 	rightPos := p.navigator.GoToRight(pos)
 	leftSlice, rightSlice := leaves.Split(rightPos.Index())
-	left := p.traverse(p.navigator.GoToLeft(pos), leftSlice)
-	right := p.traverse(rightPos, rightSlice)
+	left := p.traverseCache(p.navigator.GoToLeft(pos), leftSlice)
+	right := p.traverseCache(rightPos, rightSlice)
 	if p.navigator.IsRoot(pos) {
 		return common.NewRoot(pos, left, right)
 	}
 	return common.NewNode(pos, left, right)
 }
 
-func (p *SearchPruner) traverseWithoutCache(pos common.Position, leaves common.KVRange) common.Visitable {
+func (p *SearchPruner) traverse(pos common.Position, leaves common.KVRange) common.Visitable {
 	if p.navigator.IsLeaf(pos) && len(leaves) == 1 {
-		return common.NewLeaf(pos, leaves[0].Value)
+		leaf := common.NewLeaf(pos, leaves[0].Value)
+		if !p.cacheResolver.IsOnPath(pos) {
+			return common.NewCacheable(pos, leaf)
+		}
+		return leaf
 	}
 	if !p.navigator.IsRoot(pos) && len(leaves) == 0 {
 		cached := common.NewCached(pos, p.defaultHashes[pos.Height()])
@@ -153,8 +157,42 @@ func (p *SearchPruner) traverseWithoutCache(pos common.Position, leaves common.K
 	// split leaves
 	rightPos := p.navigator.GoToRight(pos)
 	leftSlice, rightSlice := leaves.Split(rightPos.Index())
-	left := p.traverseWithoutCache(p.navigator.GoToLeft(pos), leftSlice)
-	right := p.traverseWithoutCache(rightPos, rightSlice)
+
+	if !p.cacheResolver.IsOnPath(pos) {
+		left := p.traverseWithoutCaching(p.navigator.GoToLeft(pos), leftSlice)
+		right := p.traverseWithoutCaching(rightPos, rightSlice)
+		if p.navigator.IsRoot(pos) {
+			return common.NewRoot(pos, left, right)
+		}
+		return common.NewCacheable(pos, common.NewNode(pos, left, right))
+	}
+
+	left := p.traverse(p.navigator.GoToLeft(pos), leftSlice)
+	right := p.traverse(rightPos, rightSlice)
+	if p.navigator.IsRoot(pos) {
+		return common.NewRoot(pos, left, right)
+	}
+	return common.NewNode(pos, left, right)
+}
+
+func (p *SearchPruner) traverseWithoutCaching(pos common.Position, leaves common.KVRange) common.Visitable {
+	if p.navigator.IsLeaf(pos) && len(leaves) == 1 {
+		return common.NewLeaf(pos, leaves[0].Value)
+	}
+	if !p.navigator.IsRoot(pos) && len(leaves) == 0 {
+		return common.NewCached(pos, p.defaultHashes[pos.Height()])
+	}
+	if len(leaves) > 1 && p.navigator.IsLeaf(pos) {
+		panic("this should never happen (unsorted LeavesSlice or broken split?)")
+	}
+
+	// we do a post-order traversal
+
+	// split leaves
+	rightPos := p.navigator.GoToRight(pos)
+	leftSlice, rightSlice := leaves.Split(rightPos.Index())
+	left := p.traverseWithoutCaching(p.navigator.GoToLeft(pos), leftSlice)
+	right := p.traverseWithoutCaching(rightPos, rightSlice)
 	if p.navigator.IsRoot(pos) {
 		return common.NewRoot(pos, left, right)
 	}
@@ -181,7 +219,11 @@ func (p *VerifyPruner) traverse(pos common.Position, leaves common.KVRange) comm
 		return common.NewLeaf(pos, leaves[0].Value)
 	}
 	if !p.navigator.IsRoot(pos) && len(leaves) == 0 {
-		return common.NewCached(pos, p.defaultHashes[pos.Height()])
+		digest, ok := p.cache.Get(pos)
+		if !ok {
+			panic("this should never happen (wrong audit path)")
+		}
+		return common.NewCached(pos, digest)
 	}
 	if len(leaves) > 1 && p.navigator.IsLeaf(pos) {
 		panic("this should never happen (unsorted LeavesSlice or broken split?)")

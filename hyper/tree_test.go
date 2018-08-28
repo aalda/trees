@@ -75,6 +75,41 @@ func TestProveMembership(t *testing.T) {
 
 }
 
+func TestProveMembershipConsecutive(t *testing.T) {
+
+	log.SetLogger("TestProveMembership", log.DEBUG)
+
+	hasher := new(common.XorHasher)
+	digest := hasher.Do(common.Digest{0x0})
+	index := uint64(0)
+
+	store := bplus.NewBPlusTreeStorage()
+	simpleCache := common.NewSimpleCache(10)
+	tree := NewHyperTree(new(common.XorHasher), store, simpleCache, 2)
+
+	rh := tree.Add(digest, index)
+	assert.Equal(t, rh.Digest, common.Digest{0x0}, "Incorrect root hash")
+
+	tree.Add(hasher.Do(common.Digest{0x1}), uint64(1))
+	tree.Add(hasher.Do(common.Digest{0x2}), uint64(2))
+
+	_, pf, err := tree.Get(digest)
+	assert.Nil(t, err, "Error adding to the tree: %v", err)
+
+	ap := common.AuditPath{
+		"10|4": common.Digest{0x0},
+		"04|2": common.Digest{0x0},
+		"80|7": common.Digest{0x0},
+		"40|6": common.Digest{0x0},
+		"20|5": common.Digest{0x0},
+		"08|3": common.Digest{0x0},
+		"02|1": common.Digest{0x2},
+		"01|0": common.Digest{0x1},
+	}
+	assert.Equal(t, ap, pf.AuditPath, "Incorrect audit path")
+
+}
+
 func TestAddAndVerifyXor(t *testing.T) {
 
 	log.SetLogger("TestAddAndVerifyXor", log.DEBUG)
