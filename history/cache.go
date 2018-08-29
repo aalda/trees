@@ -1,8 +1,6 @@
 package history
 
 import (
-	"fmt"
-
 	"github.com/aalda/trees/common"
 )
 
@@ -62,22 +60,15 @@ func NewIncrementalCacheResolver(start, end uint64) *IncrementalCacheResolver {
 
 func (r IncrementalCacheResolver) ShouldBeInCache(pos common.Position) bool {
 	if pos.Height() == 0 && pos.IndexAsUint64() == r.start {
-		fmt.Println("one")
 		return true
 	}
 	threshold := pos.IndexAsUint64() + pow(2, pos.Height()) - 1
 	if r.start > threshold && r.end > threshold {
-		fmt.Println("two")
 		return true
 	}
 
 	lastDescendantIndex := pos.IndexAsUint64() + pow(2, pos.Height()) - 1
-	g := pos.IndexAsUint64() > r.start && lastDescendantIndex <= r.end
-	if g {
-		fmt.Println("three")
-		fmt.Println(pos.IndexAsUint64(), r.start, lastDescendantIndex, r.end)
-	}
-	return g
+	return pos.IndexAsUint64() > r.start && lastDescendantIndex <= r.end
 }
 
 func (r IncrementalCacheResolver) ShouldCache(pos common.Position) bool {
