@@ -31,11 +31,7 @@ func (p HistoryPosition) IndexAsUint64() uint64 {
 }
 
 func (p HistoryPosition) Bytes() []byte {
-	b := make([]byte, 10) // Size of the index plus 2 bytes for the height
-	indexAsBytes := p.Index()
-	copy(b, indexAsBytes)
-	copy(b[len(indexAsBytes):], util.Uint16AsBytes(p.height))
-	return b
+	return append(p.Index(), util.Uint16AsBytes(p.height)...)
 }
 
 func (p HistoryPosition) String() string {

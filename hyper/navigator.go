@@ -42,8 +42,8 @@ func (n HyperTreeNavigator) DescendToFirst(pos common.Position) common.Position 
 
 func (n HyperTreeNavigator) DescendToLast(pos common.Position) common.Position {
 	layer := n.numBits - pos.Height()
-	base := make([]byte, n.numBits/8)
-	copy(base, pos.Index())
+	var base []byte
+	base = append(base, pos.Index()...)
 	for bit := layer; bit < n.numBits; bit++ {
 		bitSet(base, bit)
 	}
@@ -52,8 +52,8 @@ func (n HyperTreeNavigator) DescendToLast(pos common.Position) common.Position {
 
 func (n HyperTreeNavigator) splitBase(pos common.Position) []byte {
 	splitBit := n.numBits - pos.Height()
-	split := make([]byte, n.numBits/8)
-	copy(split, pos.Index())
+	var split []byte
+	split = append(split, pos.Index()...)
 	if splitBit < n.numBits {
 		bitSet(split, splitBit)
 	}
