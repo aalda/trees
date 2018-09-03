@@ -35,7 +35,7 @@ func (n HistoryTreeNavigator) GoToLeft(pos common.Position) common.Position {
 	return NewPosition(pos.IndexAsUint64(), pos.Height()-1)
 }
 func (n HistoryTreeNavigator) GoToRight(pos common.Position) common.Position {
-	rightIndex := pos.IndexAsUint64() + pow(2, pos.Height()-1)
+	rightIndex := pos.IndexAsUint64() + 1<<(pos.Height()-1)
 	if pos.Height() == 0 || rightIndex > n.version {
 		return nil
 	}
@@ -47,10 +47,6 @@ func (n HistoryTreeNavigator) DescendToFirst(pos common.Position) common.Positio
 }
 
 func (n HistoryTreeNavigator) DescendToLast(pos common.Position) common.Position {
-	lastDescendantIndex := pos.IndexAsUint64() + pow(2, pos.Height()) - 1
+	lastDescendantIndex := pos.IndexAsUint64() + 1<<pos.Height() - 1
 	return NewPosition(lastDescendantIndex, 0)
-}
-
-func pow(x, y uint16) uint64 {
-	return uint64(math.Pow(float64(x), float64(y)))
 }
